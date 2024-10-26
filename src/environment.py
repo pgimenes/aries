@@ -16,7 +16,7 @@ class GoTEnv(gym.Env):
 
     def __init__(
             self,
-            starting_thought: str = "",
+            problem: str = "",
             max_graph_size: int = 128,
             node_embedding_size: int = 128,
         ):
@@ -24,7 +24,7 @@ class GoTEnv(gym.Env):
         self.step_count = 0
         self.max_graph_size = max_graph_size
         self.node_embedding_size = node_embedding_size
-        self.starting_thought = starting_thought
+        self.problem = problem
 
         self.thought_graph = nx.Graph()
         self.thought_graph.add_node(0, embedding=np.zeros(node_embedding_size))
@@ -89,7 +89,7 @@ class GoTEnv(gym.Env):
         self.thought_graph = nx.Graph()
         self.thought_graph.add_node(
             0, 
-            thought = self.starting_thought,
+            thought = self.problem,
         )
 
         observation = self._get_obs()

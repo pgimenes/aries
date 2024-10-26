@@ -2,25 +2,22 @@ from tqdm import tqdm
 
 from environment import GoTEnv
 from agent import LLMAgent
+import tasks.sorting as task
 
 num_episodes = 1
 problem = "[0, 2, 6, 3, 8, 7, 1, 1, 6, 7, 7, 7, 7, 9, 3, 0, 1, 7, 9, 1, 3, 5, 1, 3, 6, 4, 5, 4, 7, 3, 5, 7]"
-
-operations = [
-    "split",
-    "sort",
-    "refine"
-    "score",
-    "keepbestn",
-    "aggregate",
-    "groundtruth",
-]
     
 if __name__ == "__main__":
     env = GoTEnv(
-        starting_thought=problem,
+        problem=problem,
     )
-    agent = LLMAgent(env)
+    
+    agent = LLMAgent(
+        env=env,
+        model = "gpt-4o",
+        problem_definition = task.problem_definition,
+        actions = task.actions,
+    )
 
     for episode in tqdm(range(num_episodes)):
         obs, info = env.reset()

@@ -1,10 +1,20 @@
 from llm import llm
 import ast
 import re
-import logging
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+model = "gpt-4o"
+
+problem_definition = "Sort a list of numbers in ascending order."
+
+actions = {
+    "split": "Split a sublist into two to decompose the problem.",
+    "sort": " Sort a sublist.",
+    "refine": "Refine a sublist by fixing any existing mistakes.",
+    "score": "Count the number of mistakes in the currently sorted sublist.",
+    "keepbest": "Out of the selected nodes, keep the one with the highest score, and delete the rest. You should only take this action on nodes that have been scored.",
+    "aggregate": "Merge the sorted sublists of the selected nodes into a single sorted list.",
+    "groundtruth": "Compare the sorted list in a node with the ground truth."
+}
 
 split_prompt = """<Instruction> Split the following list of numbers into 2 lists, the first list should contain the first half of the numbers and the second list the second half of the numbers.
 Only output the final 2 lists in the following format without any additional text or thoughts!:
@@ -24,12 +34,15 @@ Output:
 
 Input: {input}"""
 
-def split(graph, nodes):
+def split(
+    graph, 
+    nodes,
+):
     for node in nodes:
         # 1. Send the prompt
         node_idx = int(node)
         graph_node = graph.nodes[node_idx]
-        out = llm(split_prompt.format(input=graph_node["thought"]))
+        out = llm(split_prompt.format(input=graph_node["thought"]), model=model)
         
         # Parse the result
         try:
@@ -46,7 +59,7 @@ def split(graph, nodes):
         graph.add_node(graph.number_of_nodes(), thought=as_dict["List 2"])
         graph.add_edge(node_idx, idx)
 
-    return graph
+    return graph, False
 
 sort_prompt = """<Instruction> Sort the following list of numbers in ascending order. Output only the sorted list of numbers, no additional text. </Instruction>
 
@@ -63,19 +76,22 @@ Output: [0, 0, 0, 0, 0, 0, 0, 1, 1, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 4,
 
 Input: {input}"""
 
-def sort(graph, nodes):
+def sort(
+    graph, 
+    nodes,
+):
     for node in nodes:
         # 1. Send the prompt
         node_idx = int(node)
         graph_node = graph.nodes[node_idx]
-        out = llm(sort_prompt.format(input=graph_node["thought"]))
+        out = llm(sort_prompt.format(input=graph_node["thought"]), model=model)
         
         # 2. Update the graph
         idx = graph.number_of_nodes()
         graph.add_node(idx, thought=out[0])
         graph.add_edge(node_idx, idx)
 
-    return graph
+    return graph, False
 
 refine_prompt = """<Instruction> The following two lists represent an unsorted list of numbers and a sorted variant of that list. The sorted variant is not correct. Fix the sorted variant so that it is correct.
 Make sure that the output list is sorted in ascending order, has the same number of elements as the input list ({length}), and contains the same elements as the input list. </Instruction>
@@ -107,13 +123,22 @@ Input: {input}
 Incorrectly Sorted: {incorrectly_sorted}
 """
 
-def refine(graph, nodes):
+def refine(
+    graph, 
+    nodes,
+):
     raise NotImplementedError
 
-def score(graph, nodes):
+def score(
+    graph, 
+    nodes,
+):
     raise NotImplementedError
 
-def keepbestn(graph, nodes):
+def keepbestn(
+    graph, 
+    nodes,
+):
     raise NotImplementedError
 
 aggregate_prompt = """<Instruction> Merge the following 2 sorted lists of length X and Y into one sorted list of length X + Y using a merge sort style approach.
@@ -134,7 +159,10 @@ Merge the following two lists into one sorted list:
 Merged list:
 """
 
-def aggregate(graph, nodes):
+def aggregate(
+    graph, 
+    nodes,
+):
     if len(nodes) != 2:
         raise ValueError("aggregate action requires exactly 2 nodes to be selected")
     
@@ -143,7 +171,8 @@ def aggregate(graph, nodes):
         aggregate_prompt.format(
             input1=graph.nodes[int(nodes[0])]["thought"],
             input2=graph.nodes[int(nodes[1])]["thought"]
-        )
+        ),
+        model=model
     )
     
     # 2. Update the graph
@@ -154,9 +183,12 @@ def aggregate(graph, nodes):
         node_idx = int(node)
         graph.add_edge(node_idx, idx)
 
-    return graph
+    return graph, False
 
-def groundtruth(graph, nodes):
+def groundtruth(
+    graph, 
+    nodes,
+):
     problem = graph.nodes[0]["thought"]
     sorted_problem = ast.literal_eval(problem)
     sorted_problem.sort()
@@ -168,4 +200,6 @@ def groundtruth(graph, nodes):
 
         if thought == sorted_problem:
             return graph, True
+        
+    return graph, False
 
