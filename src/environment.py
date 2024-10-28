@@ -100,20 +100,24 @@ class GoTEnv(gym.Env):
     def step(self, action):
         operation = action["operation"]
         nodes = action["nodes"]
+        explanation = action.get("explanation", "")
 
         print(f"\nStep {self.step_count}")
-        print(f"Operation: {operation}")
-        print(f"Nodes: {nodes}\n")
+        print(f"========================")
+        print(f"Action: {operation}")
+        print(f"Nodes: {nodes}")
+        print(f"Explanation: {explanation}\n")
 
         try:
             operator = getattr(task, operation)
         except AttributeError:
-            breakpoint()
+            raise ValueError(f"Operation {operation} not found for task {task}")
 
         self.thought_graph, terminate = operator(self.thought_graph, nodes)
         truncate = False
 
         print("\nGraph state:")
+        print(f"------------------------")
         print(self.thought_graph_repr())
 
         # An environment is completed if there is a ground truth proposal with a score of 1
