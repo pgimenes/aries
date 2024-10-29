@@ -1,16 +1,62 @@
 from tqdm import tqdm
-
+import argparse
 from environment import GoTEnv
-from agent import LLMAgent
+from agent import LLMAgent, GoTAgent, IOAgent, CoTAgent, ToTAgent
 import tasks.sorting as task
 import pandas as pd
+import traceback
 
 num_episodes = 1
 
-if __name__ == "__main__":
-    with open("data/sorting32.csv") as f:
-        data = pd.read_csv(f)
+def get_agent(method, env, task):
+    if method == "io":
+        return IOAgent(
+            env=env,
+        )
+    
+    if method == "cot":
+        return CoTAgent(
+            env=env,
+            task=task,
+        )
+    
+    if method == "tot":
+        return ToTAgent(
+            env = env,
+            model = "gpt-4",
+            problem_definition = task.problem_definition,
+            actions = task.actions,
+            width = 10,
+            depth = 3,
+        )
+    
+    if method == "got":
+        return GoTAgent(
+            env=env,
+            task=task,
+        )
+    
+    if method == "llm":
+        return LLMAgent(
+            env=env,
+            model = "gpt-4",
+            problem_definition = task.problem_definition,
+            actions = task.actions,
+        )
+    
+def itr_limit(method):
+    if method == "io":
+        return 2
+    if method == "cot":
+        return 100
+    if method == "tot":
+        return 10
+    if method == "got":
+        return 100
+    if method == "llm":
+        return 100
 
+def run(args, data):
     successes = []
     failures = []
 
@@ -19,6 +65,9 @@ if __name__ == "__main__":
         print(f"Solving problem {idx}/{len(data)}")
         print(f"===============================")
 
+        if idx != 0:
+            break
+
         try:
             problem = problem[1]["Unsorted"]
 
@@ -26,26 +75,22 @@ if __name__ == "__main__":
                 problem=problem,
             )
             
-            agent = LLMAgent(
-                env=env,
-                model = "gpt-4",
-                problem_definition = task.problem_definition,
-                actions = task.actions,
-            )
+            agent = get_agent(args.method, env, task)
 
             obs, info = env.reset()
 
             done = False
-            itr = 0
-            max_iterations = 100
+            itr = 0    
+            max_iterations = itr_limit(args.method)
             while not done:
-            
+                if itr >= max_iterations:
+                    break
+
                 action = agent.get_action(obs)
                 obs, reward, terminated, truncated, info = env.step(action)
                 done = terminated or truncated
 
-                if itr > max_iterations:
-                    break
+                itr += 1
 
             if done:
                 print(f"Result: success")
@@ -55,6 +100,7 @@ if __name__ == "__main__":
                 failures.append(problem)
                 
         except Exception as e:
+            # traceback.print_stack()
             print(f"Error: {e}")
             failures.append(problem)
 
@@ -67,3 +113,19 @@ if __name__ == "__main__":
     print(f"Failures: {len(failures)}")
 
     breakpoint()
+
+if __name__ == "__main__":
+    with open("data/sorting32.csv") as f:
+        data = pd.read_csv(f)
+
+    # Read args from command line
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--method", 
+        type=str, 
+        default="tot"
+    )
+
+    args = parser.parse_args()
+
+    run(args, data)

@@ -58,7 +58,7 @@ def llm(
         try:
             msg = [choice["message"]["content"] for choice in res["choices"]]
         except:
-            breakpoint()
+            raise ValueError(f"Failed to get messages from response: {res}")
 
         outputs.extend(msg)
         
