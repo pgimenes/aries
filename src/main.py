@@ -33,7 +33,9 @@ def get_agent(method, env, task):
     if method == "got":
         return GoTAgent(
             env=env,
-            task=task,
+            model = "gpt-4",
+            problem_definition = task.problem_definition,
+            actions = task.actions,
         )
     
     if method == "llm":
@@ -50,9 +52,9 @@ def itr_limit(method):
     if method == "cot":
         return 100
     if method == "tot":
-        return 10
+        return 11
     if method == "got":
-        return 100
+        return 9
     if method == "llm":
         return 100
 
@@ -64,9 +66,6 @@ def run(args, data):
         print(f"===============================")
         print(f"Solving problem {idx}/{len(data)}")
         print(f"===============================")
-
-        if idx != 0:
-            break
 
         try:
             problem = problem[1]["Unsorted"]
@@ -123,7 +122,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--method", 
         type=str, 
-        default="tot"
+        default="llm"
     )
 
     args = parser.parse_args()

@@ -41,7 +41,17 @@ class CoTAgent:
 
         self.itr = 0
         if self_consistency:
-            pass
+            self._action_list = ["sort_cot"] * num_branches
+            self._action_list += ["score"]
+            self._action_list += ["keepbest"]
+            self._action_list += ["groundtruth"]
+
+            self._node_list = [
+                ["0"] * num_branches,
+                [str(i) for i in range(1, num_branches + 1)],
+                [str(i) for i in range(1, num_branches + 1)],
+                [str(num_branches + 1)],
+            ]
         else:
             self._action_list = [
                 "sort_cot",
@@ -111,7 +121,7 @@ class ToTAgent:
         actions += ["keepbest"]
         action_nodes += [[str(i) for i in range(1, self.width + 1)]]
         last_node += 1
-        keepbest_node = str(last_node)
+        keepbest_nodes.append(str(last_node))
 
         for i in range(self.depth - 1):
             # Refine
@@ -127,9 +137,14 @@ class ToTAgent:
 
             # Keep best
             actions += ["keepbest"]
-            action_nodes += [[str(j) for j in range(last_node - self.width + 1, last_node + 1)] + [keepbest_node]]
+            action_nodes += [[str(j) for j in range(last_node - self.width + 1, last_node + 1)]]
             last_node += 1
-            keepbest_node = str(last_node)
+            keepbest_nodes.append(str(last_node))
+
+        # Keep best
+        actions += ["keepbest"]
+        action_nodes += [keepbest_nodes]
+        last_node += 1
 
         # Ground truth
         actions += ["groundtruth"]
@@ -178,16 +193,14 @@ class GoTAgent:
             
             # Sorting
             sorted_nodes = []
-            for _ in range(sort_attempts):
-                actions += ["sort"]
-                action_nodes += [[str(split_branch)]]
-                last_node += 1
-                sorted_nodes += [str(last_node)]
+            actions += ["sort"]
+            action_nodes += [[str(split_branch)] * sort_attempts]
+            sorted_nodes += list(range(last_node + 1, last_node + 1 + sort_attempts))
+            last_node += sort_attempts
 
             # Scoring
-            for sorted_node in sorted_nodes:
-                actions += ["score"]
-                action_nodes += [[sorted_node]]
+            actions += ["score"]
+            action_nodes += [sorted_nodes]
 
             # Keep best
             actions += ["keepbest"]
@@ -204,7 +217,6 @@ class GoTAgent:
         actions += ["groundtruth"]
         action_nodes += [[str(last_node)]]
         last_node += 1
-
         return actions, action_nodes
     
 class LLMAgent:

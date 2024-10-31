@@ -227,20 +227,29 @@ def score(
     graph, 
     nodes,
 ):
-    original = ast.literal_eval(graph.nodes[0]["thought"])
 
     for node in nodes:
         node_idx = int(node)
         graph_node = graph.nodes[node_idx]
         
+        # Extract thought
         try:
-            if type(graph_node["thought"]) == list:
+            if isinstance(graph_node["thought"], list):
                 thought = graph_node["thought"]
             else:
                 thought = ast.literal_eval(graph_node["thought"])
         except:
             raise ValueError("score action requires the original and sorted lists to be in a list format")
-
+        
+        # Extract original for comparison
+        if "original" in graph_node.keys():
+            if isinstance(graph_node["original"], list):
+                original = graph_node["original"]
+            else:
+                original = ast.literal_eval(graph_node["original"])
+        else:
+            original = ast.literal_eval(graph.nodes[0]["thought"])
+        
         # Sorting errors term
         errors = 0
         for i in range(1, len(thought)):
