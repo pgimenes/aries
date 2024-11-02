@@ -7,7 +7,8 @@ from gymnasium.spaces import Graph, Box, Discrete, Sequence, Dict, GraphInstance
 import networkx as nx
 
 import logging
-import tasks.sorting as task
+import importlib
+
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -17,6 +18,7 @@ class GoTEnv(gym.Env):
     def __init__(
             self,
             problem: str = "",
+            task: str = "",
             max_graph_size: int = 128,
             node_embedding_size: int = 128,
         ):
@@ -24,10 +26,16 @@ class GoTEnv(gym.Env):
         self.step_count = 0
         self.max_graph_size = max_graph_size
         self.node_embedding_size = node_embedding_size
+        
         self.problem = problem
+        
+        self.task = importlib.import_module(f"tasks.{task}")
 
         self.thought_graph = nx.Graph()
-        self.thought_graph.add_node(0, embedding=np.zeros(node_embedding_size))
+        self.thought_graph.add_node(
+            0, 
+            embedding=np.zeros(node_embedding_size)
+        )
 
         self.observation_space = Graph(
             node_space = Box(
@@ -109,9 +117,9 @@ class GoTEnv(gym.Env):
         print(f"Explanation: {explanation}\n")
 
         try:
-            operator = getattr(task, operation)
+            operator = getattr(self.task, operation)
         except AttributeError:
-            raise ValueError(f"Operation {operation} not found for task {task}")
+            raise ValueError(f"Operation {operation} not found for task {self.task}")
 
         self.thought_graph, terminate = operator(self.thought_graph, nodes)
         truncate = False

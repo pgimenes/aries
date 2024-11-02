@@ -76006,4 +76006,14 @@ Failures: 27
 --Return--
 > /home/pg519/reasoning-agent/src/main.py(114)run()->None
 -> breakpoint()
-(Pdb) 
+(Pdb) Traceback (most recent call last):
+  File "/home/pg519/reasoning-agent/src/main.py", line 130, in <module>
+    failures.append(problem)
+^^^^^^^^^^^
+  File "/home/pg519/anaconda3/envs/got/lib/python3.11/bdb.py", line 94, in trace_dispatch
+    return self.dispatch_return(frame, arg)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/pg519/anaconda3/envs/got/lib/python3.11/bdb.py", line 156, in dispatch_return
+    if self.quitting: raise BdbQuit
+                      ^^^^^^^^^^^^^
+bdb.BdbQuit

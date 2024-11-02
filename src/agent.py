@@ -6,18 +6,14 @@ class IOAgent:
     def __init__(
         self,
         env: gym.Env,
+        task = None,
     ):
         self.env = env
+        self.task = task
 
         self.itr = 0
-        self._action_list = [
-            "sort",
-            "groundtruth",
-        ]
-        self._node_list = [
-            "0",
-            "1",
-        ]
+        self._action_list = getattr(self.task, "_io_action_list")
+        self._node_list = getattr(self.task, "_io_node_list")
 
     def get_action(self, obs: tuple[int, int, bool]) -> int:
         action = {
@@ -53,14 +49,8 @@ class CoTAgent:
                 [str(num_branches + 1)],
             ]
         else:
-            self._action_list = [
-                "sort_cot",
-                "groundtruth",
-            ]
-            self._node_list = [
-                "0",
-                "1",
-            ]
+            self._action_list = getattr(self.task, "_cot_action_list")
+            self._node_list = getattr(self.task, "_cot_node_list")
 
     def get_action(self, obs: tuple[int, int, bool]) -> int:
         action = {
@@ -75,6 +65,7 @@ class ToTAgent:
     def __init__(
         self,
         env: gym.Env,
+        task,
         model: str,
         problem_definition: str,
         actions: dict[str, str],
@@ -82,13 +73,20 @@ class ToTAgent:
         depth: int,
     ):
         self.env = env
+        self.task = task 
+
         self.model = model
         self.problem_definition = problem_definition
         self.actions = actions
+        
         self.width = width
         self.depth = depth
 
-        self._actions, self._action_nodes = self._get_action_list()
+        schedule = getattr(task, "_tot_schedule")
+        self._actions, self._action_nodes = schedule(
+            width=self.width,
+            depth=self.depth,
+        )
         self.itr = 0
 
 
@@ -101,70 +99,27 @@ class ToTAgent:
             "explanation": "",
         }
 
-    def _get_action_list(self) -> int:
-        actions = []
-        action_nodes = []
-        keepbest_nodes = []
-        last_node = 0
-
-        # Sorting
-        actions += ["sort"]
-        action_nodes += [["0"] * self.width]
-        last_node += self.width
-
-        # Score
-        score_nodes = [str(i) for i in range(1, self.width + 1)]
-        actions += ["score"]
-        action_nodes += [score_nodes]
-
-        # Keep best
-        actions += ["keepbest"]
-        action_nodes += [[str(i) for i in range(1, self.width + 1)]]
-        last_node += 1
-        keepbest_nodes.append(str(last_node))
-
-        for i in range(self.depth - 1):
-            # Refine
-            refine_node = last_node
-            actions += ["refine"]
-            action_nodes += [[str(refine_node)] * self.width]
-            last_node += self.width
-
-            # Score
-            score_nodes = [str(j) for j in range(last_node - self.width + 1, last_node + 1)]
-            actions += ["score"]
-            action_nodes += [score_nodes]
-
-            # Keep best
-            actions += ["keepbest"]
-            action_nodes += [[str(j) for j in range(last_node - self.width + 1, last_node + 1)]]
-            last_node += 1
-            keepbest_nodes.append(str(last_node))
-
-        # Keep best
-        actions += ["keepbest"]
-        action_nodes += [keepbest_nodes]
-        last_node += 1
-
-        # Ground truth
-        actions += ["groundtruth"]
-        action_nodes += [[str(last_node)]]
-        last_node += 1
-        return actions, action_nodes
-
 class GoTAgent:
     def __init__(
         self,
         env: gym.Env,
+        task,
         model: str,
         problem_definition: str,
         actions: dict[str, str],
+        split_branches: int = 2,
+        sort_attempts: int = 5,
     ):
         self.env = env
+        self.task = task
         self.model = model
 
+        schedule = getattr(task, "_got_schedule")
         self._got_action = 0
-        self._got_action_list = self._get_action_list()
+        self._got_action_list = schedule(
+            split_branches,
+            sort_attempts,
+        )
 
         self.problem_definition = problem_definition
         self.actions = actions
@@ -179,55 +134,18 @@ class GoTAgent:
         self._got_action += 1
         return action
     
-    def _get_action_list(self) -> int:        
-        split_branches = 2
-        sort_attempts = 5
-
-        # Create two split branches
-        actions = ["split"]
-        action_nodes = [["0"]]
-
-        last_node = 2
-        keepbest_nodes = []
-        for split_branch in range(1, split_branches + 1):
-            
-            # Sorting
-            sorted_nodes = []
-            actions += ["sort"]
-            action_nodes += [[str(split_branch)] * sort_attempts]
-            sorted_nodes += list(range(last_node + 1, last_node + 1 + sort_attempts))
-            last_node += sort_attempts
-
-            # Scoring
-            actions += ["score"]
-            action_nodes += [sorted_nodes]
-
-            # Keep best
-            actions += ["keepbest"]
-            action_nodes += [sorted_nodes]
-            last_node += 1
-            keepbest_nodes += [str(last_node)]
-
-        # Aggregate
-        actions += ["aggregate"]
-        action_nodes += [keepbest_nodes]
-        last_node += 1
-
-        # Groundtruth
-        actions += ["groundtruth"]
-        action_nodes += [[str(last_node)]]
-        last_node += 1
-        return actions, action_nodes
-    
 class LLMAgent:
     def __init__(
         self,
         env: gym.Env,
+        task,
         model: str,
         problem_definition: str,
         actions: dict[str, str],
     ):
         self.env = env
+        self.task = task
+
         self.model = model
         self.problem_definition = problem_definition
         self.actions = actions

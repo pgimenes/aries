@@ -16,6 +16,127 @@ actions = {
     "groundtruth": "Compare the sorted list in a node with the ground truth. When a node doesn't match the ground truth, it will be marked with 'matches_ground_truth: False'."
 }
 
+# IO
+
+_io_action_list = [
+    "sort",
+    "groundtruth",
+]
+
+_io_node_list = [
+    "0",
+    "1",
+]
+
+# CoT
+
+_cot_action_list = [
+    "sort_cot",
+    "groundtruth",
+]
+_cot_node_list = [
+    "0",
+    "1",
+]
+
+# ToT
+
+def _tot_schedule(
+        width: int,
+        depth: int,
+) -> int:
+    actions = []
+    action_nodes = []
+    keepbest_nodes = []
+    last_node = 0
+
+    # Sorting
+    actions += ["sort"]
+    action_nodes += [["0"] * width]
+    last_node += width
+
+    # Score
+    score_nodes = [str(i) for i in range(1, width + 1)]
+    actions += ["score"]
+    action_nodes += [score_nodes]
+
+    # Keep best
+    actions += ["keepbest"]
+    action_nodes += [[str(i) for i in range(1, width + 1)]]
+    last_node += 1
+    keepbest_nodes.append(str(last_node))
+
+    for i in range(depth - 1):
+        # Refine
+        refine_node = last_node
+        actions += ["refine"]
+        action_nodes += [[str(refine_node)] * width]
+        last_node += width
+
+        # Score
+        score_nodes = [str(j) for j in range(last_node - width + 1, last_node + 1)]
+        actions += ["score"]
+        action_nodes += [score_nodes]
+
+        # Keep best
+        actions += ["keepbest"]
+        action_nodes += [[str(j) for j in range(last_node - width + 1, last_node + 1)]]
+        last_node += 1
+        keepbest_nodes.append(str(last_node))
+
+    # Keep best
+    actions += ["keepbest"]
+    action_nodes += [keepbest_nodes]
+    last_node += 1
+
+    # Ground truth
+    actions += ["groundtruth"]
+    action_nodes += [[str(last_node)]]
+    last_node += 1
+    return actions, action_nodes
+
+# GoT
+
+def _got_schedule(    
+    split_branches:int,
+    sort_attempts:int,
+) -> int:        
+    # Create two split branches
+    actions = ["split"]
+    action_nodes = [["0"]]
+
+    last_node = 2
+    keepbest_nodes = []
+    for split_branch in range(1, split_branches + 1):
+        
+        # Sorting
+        sorted_nodes = []
+        actions += ["sort"]
+        action_nodes += [[str(split_branch)] * sort_attempts]
+        sorted_nodes += list(range(last_node + 1, last_node + 1 + sort_attempts))
+        last_node += sort_attempts
+
+        # Scoring
+        actions += ["score"]
+        action_nodes += [sorted_nodes]
+
+        # Keep best
+        actions += ["keepbest"]
+        action_nodes += [sorted_nodes]
+        last_node += 1
+        keepbest_nodes += [str(last_node)]
+
+    # Aggregate
+    actions += ["aggregate"]
+    action_nodes += [keepbest_nodes]
+    last_node += 1
+
+    # Groundtruth
+    actions += ["groundtruth"]
+    action_nodes += [[str(last_node)]]
+    last_node += 1
+    return actions, action_nodes
+
 split_prompt = """<Instruction> Split the following list of numbers into 2 lists, the first list should contain the first half of the numbers and the second list the second half of the numbers.
 Only output the final 2 lists in the following format without any additional text or thoughts!:
 {{
@@ -365,6 +486,7 @@ def groundtruth(
     sorted_problem = ast.literal_eval(problem)
     sorted_problem.sort()
 
+    any_match = False
     for node in nodes:
         node_idx = int(node)
         thought = graph.nodes[node_idx]["thought"]
@@ -372,8 +494,8 @@ def groundtruth(
 
         if thought == sorted_problem:
             graph.nodes[node_idx]["matches_ground_truth"] = True
-            return graph, True
+            any_match = True
         else:
             graph.nodes[node_idx]["matches_ground_truth"] = False
         
-    return graph, False
+    return graph, any_match
