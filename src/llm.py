@@ -3,19 +3,23 @@ import openai
 import backoff 
 import numpy as np
 
-openai.api_type = "azure"
-openai.api_version = "2024-10-01-preview"
+# openai.api_type = "azure"
+# openai.api_version = "2024-10-01-preview"
 
-api_key = os.getenv("OPENAI_API_KEY", "")
-if api_key != "":
-    openai.api_key = api_key
-else:
-    print("Warning: OPENAI_API_KEY is not set")
+# api_key = os.getenv("OPENAI_API_KEY", "")
+# if api_key != "":
+#     openai.api_key = api_key
+# else:
+#     print("Warning: OPENAI_API_KEY is not set")
     
-api_base = os.getenv("OPENAI_API_BASE", "")
-if api_base != "":
-    print("Warning: OPENAI_API_BASE is set to {}".format(api_base))
-    openai.api_base = api_base
+# api_base = os.getenv("OPENAI_API_BASE", "")
+# if api_base != "":
+#     print("Warning: OPENAI_API_BASE is set to {}".format(api_base))
+#     openai.api_base = api_base
+
+import openai
+client = openai.Client(
+    base_url="http://127.0.0.1:30000/v1", api_key="EMPTY")
 
 def get_proposal_perplexities(res):
     interm = []
@@ -32,11 +36,11 @@ def get_proposal_perplexities(res):
 
     return proposal_ppl
 
-@backoff.on_exception(backoff.expo, openai.error.OpenAIError)
+# @backoff.on_exception(backoff.expo, openai.error.OpenAIError)
 def completions_with_backoff(**kwargs):
-    kwargs["engine"] = kwargs.pop("model")
+    # kwargs["engine"] = kwargs.pop("model")
     # kwargs["logprobs"] = True
-    return openai.ChatCompletion.create(**kwargs)
+    return client.chat.completions.create(**kwargs)
 
 def llm(
     prompt,
@@ -56,7 +60,7 @@ def llm(
         res = completions_with_backoff(model=model, messages=messages, temperature=temperature, max_tokens=max_tokens, n=cnt, stop=stop)
 
         try:
-            msg = [choice["message"]["content"] for choice in res["choices"]]
+            msg = [choice.message.content for choice in res.choices]
         except:
             raise ValueError(f"Failed to get messages from response: {res}")
 

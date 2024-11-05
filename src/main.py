@@ -14,11 +14,11 @@ def excepthook(exc_type, exc_value, exc_traceback):
     pdb.post_mortem(exc_traceback)
 
 # Set the custom exception hook
-# sys.excepthook = excepthook
+sys.excepthook = excepthook
 
 num_episodes = 1
 
-def get_agent(method, env, task):
+def get_agent(method, env, task, **kwargs):
     if method == "io":
         return IOAgent(
             env=env,
@@ -38,8 +38,8 @@ def get_agent(method, env, task):
             model = "gpt-4",
             problem_definition = task.problem_definition,
             actions = task.actions,
-            width = 10,
-            depth = 6,
+            width = kwargs.get("tot_width", 10),
+            depth = kwargs.get("tot_depth", 6),
         )
     
     if method == "got":
@@ -49,6 +49,8 @@ def get_agent(method, env, task):
             model = "gpt-4",
             problem_definition = task.problem_definition,
             actions = task.actions,
+            branches=kwargs.get("got_branches", 4),
+            attempts=kwargs.get("got_attempts", 10),
         )
     
     if method == "llm":
@@ -59,18 +61,6 @@ def get_agent(method, env, task):
             problem_definition = task.problem_definition,
             actions = task.actions,
         )
-    
-def itr_limit(method):
-    if method == "io":
-        return 2
-    if method == "cot":
-        return 2
-    if method == "tot":
-        return 11
-    if method == "got":
-        return 9
-    if method == "llm":
-        return 100
 
 def run(args, data):
     successes = []
@@ -114,12 +104,24 @@ def run(args, data):
             
             # Build agent
             task = importlib.import_module(f"tasks.{taskname}")
-            agent = get_agent(args.method, env, task)
+            
+            kwargs = {
+                "got_branches": args.got_branches,
+                "got_attempts": args.got_attempts,
+                "tot_width": args.tot_width,
+                "tot_depth": args.tot_depth,
+            }
+
+            # Number of branches depends on number of sentences in the problem
+            if args.task == "keyword_counting":
+                kwargs["got_branches"] = len(problem.split(".")) - 1
+
+            agent = get_agent(args.method, env, task, **kwargs)
 
             # Run agent on environment
             done = False
             itr = 0    
-            max_iterations = itr_limit(args.method)
+            max_iterations = agent.max_iterations
             while not done:
                 if itr >= max_iterations:
                     break
@@ -163,12 +165,33 @@ def argparser():
     parser.add_argument(
         "--task", 
         type=str, 
-        default="keyword_counting"
+        default="sorting32"
     )
     parser.add_argument(
         "--max_iterations", 
         type=int, 
         default=100,
+    )
+
+    parser.add_argument(
+        "--got_branches", 
+        type=int, 
+        default=4,
+    )
+    parser.add_argument(
+        "--got_attempts", 
+        type=int, 
+        default=10,
+    )
+    parser.add_argument(
+        "--tot_width", 
+        type=int, 
+        default=10,
+    )
+    parser.add_argument(
+        "--tot_depth", 
+        type=int, 
+        default=6,
     )
 
     return parser.parse_args()

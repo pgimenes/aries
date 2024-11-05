@@ -14,6 +14,7 @@ class IOAgent:
         self.itr = 0
         self._action_list = getattr(self.task, "_io_action_list")
         self._node_list = getattr(self.task, "_io_node_list")
+        self.max_iterations = len(self._action_list)
 
     def get_action(self, obs: tuple[int, int, bool]) -> int:
         action = {
@@ -52,6 +53,8 @@ class CoTAgent:
             self._action_list = getattr(self.task, "_cot_action_list")
             self._node_list = getattr(self.task, "_cot_node_list")
 
+        self.max_iterations = len(self._action_list)
+
     def get_action(self, obs: tuple[int, int, bool]) -> int:
         action = {
             "nodes": self._node_list[self.itr],
@@ -89,6 +92,8 @@ class ToTAgent:
         )
         self.itr = 0
 
+        self.max_iterations = len(self._actions)
+
 
     def get_action(self, obs: tuple[int, int, bool]) -> int:
         action, action_nodes = self._actions[self.itr], self._action_nodes[self.itr]
@@ -107,8 +112,8 @@ class GoTAgent:
         model: str,
         problem_definition: str,
         actions: dict[str, str],
-        split_branches: int = 2,
-        sort_attempts: int = 5,
+        branches: int = 2,
+        attempts: int = 5,
     ):
         self.env = env
         self.task = task
@@ -116,19 +121,20 @@ class GoTAgent:
 
         schedule = getattr(task, "_got_schedule")
         self._got_action = 0
-        self._got_action_list = schedule(
-            split_branches,
-            sort_attempts,
+        self._actions, self._action_nodes = schedule(
+            branches,
+            attempts,
         )
 
         self.problem_definition = problem_definition
         self.actions = actions
 
+        self.max_iterations = len(self._actions)
+
     def get_action(self, obs: tuple[int, int, bool]) -> int:
-        actions, action_nodes = self._got_action_list
         action = {
-            "nodes": action_nodes[self._got_action],
-            "operation": actions[self._got_action],
+            "nodes": self._action_nodes[self._got_action],
+            "operation": self._actions[self._got_action],
             "explanation": "",
         }
         self._got_action += 1

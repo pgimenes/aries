@@ -9,8 +9,8 @@ problem_definition = "Sort a list of numbers in ascending order."
 actions = {
     "split": "Split a sublist into two to decompose the problem.",
     "sort": " Sort a sublist.",
-    "refine": "Refine a sublist by fixing any existing mistakes. This action should only be called on nodes that have already been scored.",
     "score": "Count the number of mistakes in the currently sorted sublist.",
+    "refine": "Refine a sublist by fixing any existing mistakes. This action should only be called on nodes that have already been scored.",
     "keepbest": "Out of the selected nodes, keep the one with the highest score, and delete the rest. This action should only be called on nodes that have already been scored.",
     "aggregate": "Merge the sorted sublists of the selected nodes into a single sorted list. You can only aggregate two nodes at a time.",
     "groundtruth": "Compare the sorted list in a node with the ground truth. When a node doesn't match the ground truth, it will be marked with 'matches_ground_truth: False'."
@@ -20,11 +20,13 @@ actions = {
 
 _io_action_list = [
     "sort",
+    "score",
     "groundtruth",
 ]
 
 _io_node_list = [
     "0",
+    "1",
     "1",
 ]
 
@@ -32,10 +34,12 @@ _io_node_list = [
 
 _cot_action_list = [
     "sort_cot",
+    "score",
     "groundtruth",
 ]
 _cot_node_list = [
     "0",
+    "1",
     "1",
 ]
 
@@ -207,6 +211,7 @@ def sort(
         node_idx = int(node)
         graph_node = graph.nodes[node_idx]
         out = llm(sort_prompt.format(input=graph_node["thought"]), model=model)
+        # out = [ast.literal_eval(graph_node["thought"])]
         
         # 2. Update the graph
         idx = max(list(graph.nodes)) + 1
@@ -289,7 +294,7 @@ def sort_cot(
 
 
 refine_prompt = """<Instruction> The following two lists represent an unsorted list of numbers and a sorted variant of that list. The sorted variant is not correct. Fix the sorted variant so that it is correct.
-Make sure that the output list is sorted in ascending order, has the same number of elements as the input list, and contains the same elements as the input list. </Instruction>
+Make sure that the output list is sorted in ascending order, has the same number of elements as the input list, and contains the same elements as the input list. Only output in the described format as in the example, with no additional text. </Instruction>
 
 <Approach>
 To fix the incorrectly sorted list follow these steps:
@@ -329,6 +334,7 @@ def refine(
 
         # Find reason and output
         output = out[0].split("Output: ")[-1]
+        # output = [original]
 
         # Update the graph
         idx = max(list(graph.nodes)) + 1
@@ -359,32 +365,33 @@ def score(
                 thought = graph_node["thought"]
             else:
                 thought = ast.literal_eval(graph_node["thought"])
-        except:
-            raise ValueError("score action requires the original and sorted lists to be in a list format")
         
-        # Extract original for comparison
-        if "original" in graph_node.keys():
-            if isinstance(graph_node["original"], list):
-                original = graph_node["original"]
+            # Extract original for comparison
+            if "original" in graph_node.keys():
+                if isinstance(graph_node["original"], list):
+                    original = graph_node["original"]
+                else:
+                    original = ast.literal_eval(graph_node["original"])
             else:
-                original = ast.literal_eval(graph_node["original"])
-        else:
-            original = ast.literal_eval(graph.nodes[0]["thought"])
-        
-        # Sorting errors term
-        errors = 0
-        for i in range(1, len(thought)):
-            if thought[i] < thought[i - 1]:
-                errors += 1
+                original = ast.literal_eval(graph.nodes[0]["thought"])
+            
+            # Sorting errors term
+            errors = 0
+            for i in range(1, len(thought)):
+                if thought[i] < thought[i - 1]:
+                    errors += 1
 
-        # Frequency difference term
-        real_freq_dict = {}
-        thought_freq_dict = {}
-        for i in range(0, 10):
-            real_freq_dict[i] = original.count(i)
-            thought_freq_dict[i] = thought.count(i)
-            diff = abs(real_freq_dict[i] - thought_freq_dict[i])
-            errors += diff
+            # Frequency difference term
+            real_freq_dict = {}
+            thought_freq_dict = {}
+            for i in range(0, 10):
+                real_freq_dict[i] = original.count(i)
+                thought_freq_dict[i] = thought.count(i)
+                diff = abs(real_freq_dict[i] - thought_freq_dict[i])
+                errors += diff
+        
+        except:
+            errors = 1000000
 
         graph.nodes[node_idx]["score"] = errors
 
@@ -402,34 +409,49 @@ def keepbest(
     nodes,
 ):
     min_score = 1000000
-    best_node_idx = None
+    best_node_idx = nodes[0] # if all nodes have the same score, keep the first one
     
     # Node id for the new node
     # (decide before deleting nodes)
     new_idx = max(list(graph.nodes)) + 1
+    
+    if new_idx in graph.nodes:
+        raise ValueError(f"new_idx {new_idx} already exists in graph")
 
     # Find node with highest score
-    for idx, node in enumerate(nodes):
+    for node in nodes:
         graph_node = graph.nodes[int(node)]
         
         if graph_node["score"] < min_score:
             min_score = graph_node["score"]
             best_node_idx = node
 
-    # Delete all other nodes
+    # Duplicate the best node
+    added = False
+    nodes_to_remove = []
     for _, node in enumerate(nodes):
         node_idx = int(node)
         
-        # Duplicate the best node
         if node == best_node_idx:
+            added = True
             graph.add_node(
                 new_idx, 
                 thought=graph.nodes[int(best_node_idx)]["thought"], 
                 score=min_score,
             )
-            graph.add_edge(get_parent_nodes(graph, node_idx)[0], new_idx)
+
+            parent_node = get_parent_nodes(graph, node_idx)[0]
+            graph.add_edge(parent_node, new_idx)
         
-        graph.remove_node(node_idx)
+        # Flag node to remove
+        nodes_to_remove.append(node_idx)
+
+    if not added:
+        breakpoint()
+
+    # Remove the other nodes
+    for node in nodes_to_remove:
+        graph.remove_node(node)
 
     return graph, False
 
@@ -490,12 +512,22 @@ def groundtruth(
     for node in nodes:
         node_idx = int(node)
         thought = graph.nodes[node_idx]["thought"]
-        thought = ast.literal_eval(thought)
-
-        if thought == sorted_problem:
-            graph.nodes[node_idx]["matches_ground_truth"] = True
-            any_match = True
-        else:
+        
+        try:
+            if isinstance(thought, list):
+                thought = thought
+            else:
+                thought = ast.literal_eval(thought)
+            
+            if thought == sorted_problem:
+                graph.nodes[node_idx]["matches_ground_truth"] = True
+                any_match = True
+            else:
+                graph.nodes[node_idx]["matches_ground_truth"] = False
+        except:
             graph.nodes[node_idx]["matches_ground_truth"] = False
+            pass
+
+
         
     return graph, any_match
