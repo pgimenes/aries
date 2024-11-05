@@ -84,33 +84,38 @@ def score(
         graph_node = graph.nodes[node_idx]
         thought = graph_node["thought"]
 
-        # Parse the expression
-        set1 = set(ast.literal_eval(graph_node["set1"]))
-        set2 = set(ast.literal_eval(graph_node["set2"]))
-        intersection = list(set1.intersection(set2))
-        intersection.sort()
-
-        if isinstance(thought, list):
-            thought.sort()
-        else:
-            thought = ast.literal_eval(thought)
-            thought.sort()
-
-        # X_1: elements in C that aren't supposed to be there
         errors = 0
-        for i in thought:
-            if i not in intersection:
-                errors += 1
+        try:
+            # Parse the expression
+            set1 = set(ast.literal_eval(graph_node["set1"]))
+            set2 = set(ast.literal_eval(graph_node["set2"]))
+            intersection = list(set1.intersection(set2))
+            intersection.sort()
 
-        # X_2: elements in C that are missing
-        for i in intersection:
-            if i not in thought:
-                errors += 1
+            if isinstance(thought, list):
+                thought.sort()
+            else:
+                thought = ast.literal_eval(thought)
+                thought.sort()
 
-        # X_d: duplicated elements
-        for i in set(thought):
-            if thought.count(i) > 1:
-                errors += 1
+            # X_1: elements in C that aren't supposed to be there
+            for i in thought:
+                if i not in intersection:
+                    errors += 1
+
+            # X_2: elements in C that are missing
+            for i in intersection:
+                if i not in thought:
+                    errors += 1
+
+            # X_d: duplicated elements
+            for i in set(thought):
+                if thought.count(i) > 1:
+                    errors += 1
+        except:
+            # If the parsing fails, the LLM output is incorrectly formulated
+            # so we assign a high error value
+            errors = 1000000
 
         graph_node["score"] = errors
 
