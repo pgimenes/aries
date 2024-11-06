@@ -18,42 +18,46 @@ sys.excepthook = excepthook
 
 num_episodes = 1
 
-def get_agent(method, env, task, **kwargs):
-    if method == "io":
+def get_agent(agent, env, task, **kwargs):
+    if agent == "io":
         return IOAgent(
             env=env,
             task = task,
         )
     
-    if method == "cot":
+    if agent == "cot":
         return CoTAgent(
             env=env,
             task=task,
         )
     
-    if method == "tot":
+    if agent == "tot":
         return ToTAgent(
             env = env,
             task = task,
             model = "gpt-4",
             problem_definition = task.problem_definition,
             actions = task.actions,
-            width = kwargs.get("tot_width", 10),
-            depth = kwargs.get("tot_depth", 6),
+            width = kwargs.get("tot_width"),
+            depth = kwargs.get("tot_depth"),
         )
     
-    if method == "got":
+    if agent == "got":
         return GoTAgent(
             env=env,
             task = task,
             model = "gpt-4",
             problem_definition = task.problem_definition,
             actions = task.actions,
-            branches=kwargs.get("got_branches", 4),
-            attempts=kwargs.get("got_attempts", 10),
+            branches=kwargs.get("got_branches"),
+            generate_attempts=kwargs.get("got_generate_attempts"),
+            aggregate_attempts=kwargs.get("got_aggregate_attempts"),
+            post_aggregate_keepbest=kwargs.get("got_post_aggregate_keepbest"),
+            post_aggregate_refine=kwargs.get("got_post_aggregate_refine"),
+            refine_attempts=kwargs.get("got_refine_attempts"), 
         )
     
-    if method == "llm":
+    if agent == "llm":
         return LLMAgent(
             env=env,
             task = task,
@@ -76,73 +80,88 @@ def run(args, data):
         print(f"Solving problem {idx}/{len(data)}")
         print(f"===============================")
 
-        try:
-            if "sorting" in args.task:
-                problem = problem[1]["Unsorted"]
-            elif args.task == "game24":
-                problem = problem[1]["Puzzles"]
-            elif args.task == "crosswords":
-                problem, solution = problem
-            elif args.task == "keyword_counting":
-                problem = problem[1]["Text"]
-            elif "set_intersection" in args.task:
-                problem = {
-                    "set1": problem[1]["SET1"],
-                    "set2": problem[1]["SET2"],
-                }
-            else:
-                raise Exception("Invalid task")
-
-            # Build environment
-            taskname = "sorting" if "sorting" in args.task else args.task
-            taskname = "set_intersection" if "set_intersection" in taskname else taskname
-            env = GoTEnv(
-                problem=problem,
-                task= taskname,
-            )
-            obs, _ = env.reset()
-            
-            # Build agent
-            task = importlib.import_module(f"tasks.{taskname}")
-            
-            kwargs = {
-                "got_branches": args.got_branches,
-                "got_attempts": args.got_attempts,
-                "tot_width": args.tot_width,
-                "tot_depth": args.tot_depth,
+        # try:
+        if "sorting" in args.task:
+            problem = problem[1]["Unsorted"]
+        elif args.task == "game24":
+            problem = problem[1]["Puzzles"]
+        elif args.task == "crosswords":
+            problem, solution = problem
+        elif args.task == "keyword_counting":
+            problem = problem[1]["Text"]
+        elif "set_intersection" in args.task:
+            problem = {
+                "set1": problem[1]["SET1"],
+                "set2": problem[1]["SET2"],
             }
+        else:
+            raise Exception("Invalid task")
 
-            # Number of branches depends on number of sentences in the problem
-            if args.task == "keyword_counting":
-                kwargs["got_branches"] = len(problem.split(".")) - 1
+        # Build environment
+        taskname = "sorting" if "sorting" in args.task else args.task
+        taskname = "set_intersection" if "set_intersection" in taskname else taskname
+        env = GoTEnv(
+            problem=problem,
+            task= taskname,
+        )
+        obs, _ = env.reset()
+        
+        # Build agent
+        task = importlib.import_module(f"tasks.{taskname}")
+        
+        kwargs = {
+            # ToT parameters
+            "tot_width": args.tot_width,
+            "tot_depth": args.tot_depth,
 
-            agent = get_agent(args.method, env, task, **kwargs)
+            # GoT parameters
+            "got_branches": args.got_branches,
+            "got_generate_attempts": args.got_generate_attempts,
+            "got_aggregate_attempts": args.got_aggregate_attempts,
+            "got_post_aggregate_keepbest": args.got_post_aggregate_keepbest,
+            "got_post_aggregate_refine": args.got_post_aggregate_refine,
+            "got_refine_attempts": args.got_refine_attempts,
+        }
 
-            # Run agent on environment
-            done = False
-            itr = 0    
-            max_iterations = agent.max_iterations
-            while not done:
-                if itr >= max_iterations:
-                    break
+        # Number of branches depends on number of sentences in the problem
+        if "sorting" in args.task:
+            kwargs["got_post_aggregate_keepbest"] = True
+            kwargs["got_post_aggregate_refine"] = True
+        if "set_intersection" in args.task:
+            kwargs["got_post_aggregate_keepbest"] = True
+            kwargs["got_post_aggregate_refine"] = False
+        if args.task == "keyword_counting":
+            kwargs["got_branches"] = len(problem.split(".")) - 1
+            kwargs["got_post_aggregate_keepbest"] = False
+            kwargs["got_post_aggregate_refine"] = True
 
-                action = agent.get_action(obs)
-                obs, reward, terminated, truncated, info = env.step(action)
-                done = terminated or truncated
+        agent = get_agent(args.agent, env, task, **kwargs)
 
-                itr += 1
+        # Run agent on environment
+        done = False
+        itr = 0    
+        max_iterations = agent.max_iterations
+        while not done:
+            if itr >= max_iterations:
+                break
 
-            if done:
-                print(f"Result: success")
-                successes.append(problem)
-            else:
-                print(f"Result: failure")
-                failures.append(problem)
-                
-        except Exception as e:
-            # traceback.print_stack()
-            print(f"Error: {e}")
+            action = agent.get_action(obs)
+            obs, reward, terminated, truncated, info = env.step(action)
+            done = terminated or truncated
+
+            itr += 1
+
+        if done:
+            print(f"Result: success")
+            successes.append(problem)
+        else:
+            print(f"Result: failure")
             failures.append(problem)
+                
+        # except Exception as e:
+        #     # traceback.print_stack()
+        #     print(f"Error: {e}")
+        #     failures.append(problem)
 
     # summary
     print(f"===============================")
@@ -158,7 +177,7 @@ def argparser():
     # Read args from command line
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--method", 
+        "--agent", 
         type=str, 
         default="tot"
     )
@@ -173,25 +192,48 @@ def argparser():
         default=100,
     )
 
+    # GoT Agent
     parser.add_argument(
         "--got_branches", 
         type=int, 
-        default=4,
+        default=2,
     )
     parser.add_argument(
-        "--got_attempts", 
+        "--got_generate_attempts", 
         type=int, 
-        default=10,
+        default=2,
     )
+    parser.add_argument(
+        "--got_aggregate_attempts", 
+        type=int, 
+        default=2,
+    )
+    parser.add_argument(
+        "--got_post_aggregate_keepbest", 
+        type=bool, 
+        default=True,
+    )
+    parser.add_argument(
+        "--got_post_aggregate_refine", 
+        type=bool, 
+        default=True,
+    )
+    parser.add_argument(
+        "--got_refine_attempts", 
+        type=int, 
+        default=2,
+    )
+
+    # ToT Agent
     parser.add_argument(
         "--tot_width", 
         type=int, 
-        default=10,
+        default=2,
     )
     parser.add_argument(
         "--tot_depth", 
         type=int, 
-        default=6,
+        default=2,
     )
 
     return parser.parse_args()
