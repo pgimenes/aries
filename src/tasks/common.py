@@ -24,19 +24,21 @@ def common_keepbest(
 
     # Find node with highest score
     for idx, node in enumerate(nodes):
-        graph_node = graph.nodes[int(node)]
+        node_idx = int(node)
+        graph_node = graph.nodes[node_idx]
         
         if graph_node["score"] < min_score:
             min_score = graph_node["score"]
-            best_node_idx = node
+            best_node_idx = node_idx
 
     # Duplicate the best node
     added = False
     nodes_to_remove = []
     for _, node in enumerate(nodes):
         node_idx = int(node)
+        graph_node = graph.nodes[node_idx]
         
-        if node == best_node_idx:
+        if node_idx == best_node_idx:
             added = True
 
             graph.add_node(
@@ -45,8 +47,9 @@ def common_keepbest(
                 score=min_score,
             )
 
+            # Copy attributes from parent node
             for key, value in graph_node.items():
-                if key == "thought":
+                if key in ["thought", "score"]:
                     continue
                 graph.nodes[new_idx][key] = value
 
@@ -59,8 +62,6 @@ def common_keepbest(
     if not added:
         raise ValueError(f"Best node {best_node_idx} not found in nodes {nodes}")
 
-    if nodes == [17, 18]:
-        breakpoint()
 
     # Remove the other nodes
     for node in nodes_to_remove:
