@@ -11,18 +11,18 @@ model = "gpt-4"
 problem_definition = "Sort a list of numbers in ascending order."
 
 actions = {
-    "split": "Split a sublist into two to decompose the problem.",
-    "sort": " Sort a sublist.",
-    "score": "Count the number of mistakes in the currently sorted sublist.",
-    "refine": "Refine a sublist by fixing any existing mistakes. This action should only be called on nodes that have already been scored.",
+    "split": "Split a sublist into two to decompose the problem. This creates two new nodes connected to the original node.",
+    "sort": "Sort a sublist. This creates a new node with the sorted sublist, connected to the original node.",
+    "score": "Count the number of mistakes in the currently sorted sublist and mark the node with the number of mistakes. This action doesn't create any new nodes.",
+    "refine": "Refine a sublist by fixing any existing mistakes. This action should only be called on nodes that have already been scored. This creates a new node connected to the original node.",
     "keepbest": "Out of the selected nodes, keep the one with the highest score, and delete the rest. This action should only be called on nodes that have already been scored.",
-    "aggregate": "Merge the sorted sublists of the selected nodes into a single sorted list. You can only aggregate two nodes at a time.",
+    "aggregate": "Merge the sorted sublists of the selected nodes into a single sorted list. You can only aggregate two nodes at a time. This action creates a new node connected to the two selected nodes.",
     "groundtruth": "Compare the sorted list in a node with the ground truth. When a node doesn't match the ground truth, it will be marked with 'matches_ground_truth: False'."
 }
 
 # Implementation
 
-split32 = """<Instruction> Split the following list of numbers into 2 lists, the first list should contain the first half of the numbers and the second list the second half of the numbers.
+splitx = """<Instruction> Split the following list of numbers into 2 lists, the first list should contain the first half of the numbers and the second list the second half of the numbers.
 Only output the final 2 lists in the following format without any additional text or thoughts!:
 {{
     "List 1": [3, 4, 3, 5, 7, 8, 1, ...],
@@ -35,6 +35,24 @@ Output:
 {{
     List 1: [9, 6, 7, 7, 2, 0, 2, 2, 3, 5, 0, 9, 2, 2, 4, 4],
     List 2: [5, 2, 5, 1, 2, 8, 3, 8, 3, 9, 6, 0, 4, 2, 2, 3]
+}}
+</Example>
+
+Input: {input}"""
+
+split32 = """<Instruction> Split the following list of 32 numbers into 2 lists of 16 numbers each, the first list should contain the first 16 numbers and the second list the second 16 numbers.
+Only output the final 2 lists in the following format without any additional text or thoughts!:
+{{
+    "List 1": [3, 4, 3, 5, 7, 8, 1, ...],
+    "List 2": [2, 9, 2, 4, 7, 1, 5, ...]
+}} </Instruction>
+
+<Example>
+Input: [9, 6, 7, 7, 2, 0, 2, 2, 3, 5, 0, 9, 2, 2, 4, 4, 5, 2, 5, 1, 2, 8, 3, 8, 3, 9, 6, 0, 4, 2, 2, 3]
+Output: 
+{{
+    "List 1": [9, 6, 7, 7, 2, 0, 2, 2, 3, 5, 0, 9, 2, 2, 4, 4],
+    "List 2": [5, 2, 5, 1, 2, 8, 3, 8, 3, 9, 6, 0, 4, 2, 2, 3]
 }}
 </Example>
 
@@ -101,7 +119,11 @@ def split(
         node_idx = int(node)
         graph_node = graph.nodes[node_idx]
 
-        num_elems = len(ast.literal_eval(graph_node["thought"]))
+        if isinstance(graph_node["thought"], list):
+            num_elems = len(graph_node["thought"])
+        else:
+            num_elems = len(ast.literal_eval(graph_node["thought"]))
+
         if num_elems == 32:
             split_prompt = split32
         elif num_elems == 64:
@@ -109,7 +131,7 @@ def split(
         elif num_elems == 128:
             split_prompt = split128
         else:
-            raise ValueError("Invalid number of elements in the list")
+            split_prompt = splitx
 
         out = llm(
             split_prompt.format(

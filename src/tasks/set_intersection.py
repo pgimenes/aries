@@ -8,16 +8,16 @@ from .common import (
 
 model = "gpt-4"
 
-problem_definition = "Count the frequency of how many times each country is explicitly named in the input text."
+problem_definition = "Find the intersection of two sets of numbers."
 
 actions = {
-    "split": "",
-    "intersect": "",
-    "score": "",
-    "keepbestn": "",
-    "refine": "",
-    "aggregate": "",
-    "groundtruth": "",
+    "split": "Split a list into two to decompose the problem. This creates two new nodes connected to the original node.",
+    "intersect": "Find the intersection of two subsets. This creates a new node with the intersection, connected to the original node.",
+    "score": "Count the number of mistakes in the current set intersection and mark the node with the number of mistakes. This action doesn't create any new nodes.",
+    "refine": "Refine an intersection by fixing any existing mistakes. This action should only be called on nodes that have already been scored and contain mistakes (i.e. non-zero scores). This creates a new node connected to the original node.",
+    "keepbest": "Out of the selected nodes, keep the one with the highest score, and delete the rest. This action should only be called on nodes that have already been scored.",
+    "aggregate": "Merge the intersected subsets of the selected nodes into a single set intersection. You can only aggregate two nodes at a time. This action creates a new node connected to the two selected nodes.",
+    "groundtruth": "Compare the sorted list in a node with the ground truth. When a node doesn't match the ground truth, it will be marked with 'matches_ground_truth: False'."
 }
 
 # Implementation
@@ -139,7 +139,7 @@ def split(
 
     return graph, False
 
-intersect_prompt = """<Instruction> Find the intersection of two sets of numbers. Output only the set of numbers that are present in both sets, no additional text. </Instruction>
+intersect_prompt = """<Instruction>Find the intersection of two sets of numbers. Output only the set of numbers that are present in both sets, no additional text. </Instruction>
 
 <Examples>
 Input Set 1: [13, 16, 30, 6, 21, 7, 31, 15, 11, 1, 24, 10, 9, 3, 20, 8]
@@ -330,10 +330,15 @@ def aggregate(
     
     # 2. Update the graph
     idx = max(list(graph.nodes)) + 1
+    if graph.nodes[int(nodes[0])].get("score", None) is None or graph.nodes[int(nodes[1])].get("score", None) is None:
+        newscore = None,
+    else:
+        newscore = graph.nodes[int(nodes[0])]["score"] + graph.nodes[int(nodes[1])]["score"]
+        
     graph.add_node(
         idx, 
         thought=out[0],
-        score=graph.nodes[int(nodes[0])]["score"] + graph.nodes[int(nodes[1])]["score"],
+        score=newscore,
         original = None,
     )
 

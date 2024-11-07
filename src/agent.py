@@ -184,6 +184,10 @@ class LLMAgent:
         self.problem_definition = problem_definition
         self.actions = actions
 
+        self.max_iterations = 100
+
+        self.action_history = []
+
         self.prompt = """
 <Instruction>
 You are a reasoning agent responsible for solving a problem by guiding the exploration of a thought graph.
@@ -215,15 +219,28 @@ Nodes: [3, 4]
 Operation: aggregate
 </example>
 
+Here is the history of previously chosen actions:
+{history}
+
 What nodes do you choose next, and what operation would you like to perform?
 """
+
+    def _get_history(self):
+        history = ""
+        for idx, action in enumerate(self.action_history):
+            history += f"Action {idx}:\n"
+            history += f"Operation: {action['operation']}\n\n"
+            history += f"Nodes: {action['nodes']}\n"
+            history += f"Explanation: {action['explanation']}\n"
+        return history
 
     def get_action(self, obs: tuple[int, int, bool]) -> int:        
         graph_repr = self.env.thought_graph_repr()
         prompt = self.prompt.format(
             problem_definition=self.problem_definition,
             actions="\n".join([f"{k}: {v}" for k, v in self.actions.items()]),
-            graph=graph_repr
+            graph=graph_repr,
+            history=self._get_history(),
         )
         res = llm(prompt, model=self.model)
 
@@ -240,5 +257,7 @@ What nodes do you choose next, and what operation would you like to perform?
             "operation": operation,
             "explanation": explanation,
         }
+
+        self.action_history.append(action)
 
         return action

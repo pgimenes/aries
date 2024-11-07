@@ -14,13 +14,13 @@ model = "gpt-4"
 problem_definition = "Count the frequency of how many times each country is explicitly named in the input text."
 
 actions = {
-    "split": "Split the input text into smaller segments.",
-    "count": "Count the frequency of each country that appears at least once in the input text.",
-    "score": "Count the number of mistakes in the frequency of each country in the input text.",
-    "refine": "Fix the incorrect list of countries.",
-    "keepbest": "Keep the best output.",
-    "aggregate": "Combine the frequencies of countries from two segments.",
-    "groundtruth": "Compare the current output with the ground truth.",
+    "split": "Split the input text into individual sentences to decompose the problem. This creates new nodes connected to the original node.",
+    "count": "Count the frequency of each country that appears at least once in the input text. This creates a new node connected to the original node.",
+    "score": "Count the number of mistakes in the frequency of each country in the input text and mark the node with the number of mistakes. This action doesn't create any new nodes.",
+    "refine": "Refine a count by fixing any existing mistakes. This action should only be called on nodes that have already been scored and contain mistakes (i.e. non-zero scores). This creates a new node connected to the original node.",
+    "keepbest": "Out of the selected nodes, keep the one with the highest score, and delete the rest. This action should only be called on nodes that have already been scored.",
+    "aggregate": "Merge the frequency counts of the selected nodes into a single count. You can only aggregate two nodes at a time. This action creates a new node connected to the two selected nodes.",
+    "groundtruth": "Compare the country count in a node with the ground truth. When a node doesn't match the ground truth, it will be marked with 'matches_ground_truth: False'.",
 }
 
 # Implementation
@@ -362,10 +362,16 @@ def aggregate(
     thought = {k: thought1.get(k, 0) + thought2.get(k, 0) for k in set(thought1) | set(thought2)}
 
     idx = max(list(graph.nodes)) + 1
+
+    if node1.get("score", None) is None or node2.get("score", None) is None:
+        newscore = None
+    else:
+        newscore = node1["score"] + node2["score"]
+
     graph.add_node(
         idx,
         thought=thought,
-        score=node1["score"] + node2["score"],
+        score=newscore,
         original=f"{node1['original']} {node2['original']}",
     )
     graph.add_edge(int(nodes[0]), idx)
@@ -390,11 +396,18 @@ def groundtruth(
         matches = True
         real_count = get_ground_truth(original, country_list)
         for country in country_list:
-            if country not in graph_node["thought"].keys():
+            err = abs(
+                real_count.get(
+                    country,
+                    0,
+                ) - graph.nodes[int(node)]["thought"].get(
+                    country, 
+                    0,
+                )
+            )
+            if err > 0:
                 matches = False
-            
-            if real_count[country] != graph_node["thought"][country]:
-                matches = False
+                break
 
         if matches:
             graph.nodes[node_idx]["matches_ground_truth"] = True
