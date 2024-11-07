@@ -80,88 +80,88 @@ def run(args, data):
         print(f"Solving problem {idx}/{len(data)}")
         print(f"===============================")
 
-        # try:
-        if "sorting" in args.task:
-            problem = problem[1]["Unsorted"]
-        elif args.task == "game24":
-            problem = problem[1]["Puzzles"]
-        elif args.task == "crosswords":
-            problem, solution = problem
-        elif args.task == "keyword_counting":
-            problem = problem[1]["Text"]
-        elif "set_intersection" in args.task:
-            problem = {
-                "set1": problem[1]["SET1"],
-                "set2": problem[1]["SET2"],
+        try:
+            if "sorting" in args.task:
+                problem = problem[1]["Unsorted"]
+            elif args.task == "game24":
+                problem = problem[1]["Puzzles"]
+            elif args.task == "crosswords":
+                problem, solution = problem
+            elif args.task == "keyword_counting":
+                problem = problem[1]["Text"]
+            elif "set_intersection" in args.task:
+                problem = {
+                    "set1": problem[1]["SET1"],
+                    "set2": problem[1]["SET2"],
+                }
+            else:
+                raise Exception("Invalid task")
+
+            # Build environment
+            taskname = "sorting" if "sorting" in args.task else args.task
+            taskname = "set_intersection" if "set_intersection" in taskname else taskname
+            env = GoTEnv(
+                problem=problem,
+                task= taskname,
+            )
+            obs, _ = env.reset()
+            
+            # Build agent
+            task = importlib.import_module(f"tasks.{taskname}")
+            
+            kwargs = {
+                # ToT parameters
+                "tot_width": args.tot_width,
+                "tot_depth": args.tot_depth,
+
+                # GoT parameters
+                "got_branches": args.got_branches,
+                "got_generate_attempts": args.got_generate_attempts,
+                "got_aggregate_attempts": args.got_aggregate_attempts,
+                "got_post_aggregate_keepbest": args.got_post_aggregate_keepbest,
+                "got_post_aggregate_refine": args.got_post_aggregate_refine,
+                "got_refine_attempts": args.got_refine_attempts,
             }
-        else:
-            raise Exception("Invalid task")
 
-        # Build environment
-        taskname = "sorting" if "sorting" in args.task else args.task
-        taskname = "set_intersection" if "set_intersection" in taskname else taskname
-        env = GoTEnv(
-            problem=problem,
-            task= taskname,
-        )
-        obs, _ = env.reset()
-        
-        # Build agent
-        task = importlib.import_module(f"tasks.{taskname}")
-        
-        kwargs = {
-            # ToT parameters
-            "tot_width": args.tot_width,
-            "tot_depth": args.tot_depth,
+            # Number of branches depends on number of sentences in the problem
+            if "sorting" in args.task:
+                kwargs["got_post_aggregate_keepbest"] = True
+                kwargs["got_post_aggregate_refine"] = True
+            if "set_intersection" in args.task:
+                kwargs["got_post_aggregate_keepbest"] = True
+                kwargs["got_post_aggregate_refine"] = False
+            if args.task == "keyword_counting":
+                kwargs["got_branches"] = len(problem.split(".")) - 1
+                kwargs["got_post_aggregate_keepbest"] = False
+                kwargs["got_post_aggregate_refine"] = True
 
-            # GoT parameters
-            "got_branches": args.got_branches,
-            "got_generate_attempts": args.got_generate_attempts,
-            "got_aggregate_attempts": args.got_aggregate_attempts,
-            "got_post_aggregate_keepbest": args.got_post_aggregate_keepbest,
-            "got_post_aggregate_refine": args.got_post_aggregate_refine,
-            "got_refine_attempts": args.got_refine_attempts,
-        }
+            agent = get_agent(args.agent, env, task, **kwargs)
 
-        # Number of branches depends on number of sentences in the problem
-        if "sorting" in args.task:
-            kwargs["got_post_aggregate_keepbest"] = True
-            kwargs["got_post_aggregate_refine"] = True
-        if "set_intersection" in args.task:
-            kwargs["got_post_aggregate_keepbest"] = True
-            kwargs["got_post_aggregate_refine"] = False
-        if args.task == "keyword_counting":
-            kwargs["got_branches"] = len(problem.split(".")) - 1
-            kwargs["got_post_aggregate_keepbest"] = False
-            kwargs["got_post_aggregate_refine"] = True
+            # Run agent on environment
+            done = False
+            itr = 0    
+            max_iterations = agent.max_iterations
+            while not done:
+                if itr >= max_iterations:
+                    break
 
-        agent = get_agent(args.agent, env, task, **kwargs)
+                action = agent.get_action(obs)
+                obs, reward, terminated, truncated, info = env.step(action)
+                done = terminated or truncated
 
-        # Run agent on environment
-        done = False
-        itr = 0    
-        max_iterations = agent.max_iterations
-        while not done:
-            if itr >= max_iterations:
-                break
+                itr += 1
 
-            action = agent.get_action(obs)
-            obs, reward, terminated, truncated, info = env.step(action)
-            done = terminated or truncated
-
-            itr += 1
-
-        if done:
-            print(f"Result: success")
-            successes.append(problem)
-        else:
-            print(f"Result: failure")
-            failures.append(problem)
+            if done:
+                print(f"Result: success")
+                successes.append(problem)
+            else:
+                print(f"Result: failure")
+                failures.append(problem)
                 
-        # except Exception as e:
-        #     # traceback.print_stack()
-        #     print(f"Error: {e}")
-        #     failures.append(problem)
+        except Exception as e:
+            # traceback.print_stack()
+            print(f"Error: {e}")
+            failures.append(problem)
 
     # summary
     print(f"===============================")
