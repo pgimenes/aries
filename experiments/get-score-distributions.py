@@ -1,16 +1,15 @@
 import re
 import numpy
 
-model = "llama-3.1-405b"
-task = "sorting32"
-method = "cot"
-tot_final_step = 34
+task = "set-intersection64"
+method = "got"
+final_step = 61
 
 def extract_scores(log_content):
     # Regular expression to find 'score' followed by any number
 
-    if method == "tot":
-        score_pattern = fr"{tot_final_step}:.*'score':\s*(\d+)"
+    if method in ["tot", "got"]:
+        score_pattern = fr"{final_step}:.*'score':\s*(\d+)"
     else:
         score_pattern = r"'score':\s*(\d+)"
     

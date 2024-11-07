@@ -4,10 +4,6 @@ from .common import (
     _common_tot_schedule, 
     _common_got_schedule, 
     common_keepbest, 
-    _common_io_action_list,
-    _common_io_node_list,
-    _common_cot_action_list,
-    _common_cot_node_list,
 )
 
 model = "gpt-4"
@@ -24,10 +20,124 @@ actions = {
     "groundtruth": "",
 }
 
-_io_action_list = _common_io_action_list
-_io_node_list = _common_io_node_list
-_cot_action_list = _common_cot_action_list
-_cot_node_list = _common_cot_node_list
+# Implementation
+
+split_prompt32 = """<Instruction> Split the following list of 32 numbers into 2 lists of 16 numbers each, the first list should contain the first 16 numbers and the second list the second 16 numbers.
+Only output the 2 lists in the following format without any additional text or thoughts!:
+{{
+    "List 1": [13, 16, 30, 6, 21, 7, 31, ...],
+    "List 2": [25, 24, 10, 4, 27, 0, 14, ...]
+}} </Instruction>
+
+<Example>
+Input: [26, 40, 42, 57, 15, 31, 5, 32, 11, 4, 24, 28, 51, 54, 12, 22, 33, 35, 7, 13, 2, 59, 8, 23, 43, 16, 29, 55, 25, 63, 21, 18]
+Output:
+{{
+    "List 1": [26, 40, 42, 57, 15, 31, 5, 32, 11, 4, 24, 28, 51, 54, 12, 22],
+    "List 2": [33, 35, 7, 13, 2, 59, 8, 23, 43, 16, 29, 55, 25, 63, 21, 18]
+}}
+</Example>
+
+Input: {input}
+Output: """
+
+split_prompt64 = """<Instruction> Split the following list of 64 numbers into 4 lists of 16 numbers each, the first list should contain the first 16 numbers, the second list the second 16 numbers, the third list the third 16 numbers and the fourth list the fourth 16 numbers.
+Only output the 4 lists in the following format without any additional text or thoughts!:
+{{
+    "List 1": [13, 35, 20, 96, 34, 18, 47, ...],
+    "List 2": [127, 126, 9, 21, 16, 77, 22, ...],
+    "List 3": [111, 122, 85, 73, 42, 105, 123, ...],
+    "List 4": [15, 33, 59, 67, 57, 104, 8, ...]
+}} </Instruction>
+
+<Example>
+Input: [115, 61, 35, 103, 90, 117, 86, 44, 63, 45, 40, 30, 74, 33, 31, 1, 118, 48, 38, 0, 119, 51, 64, 78, 15, 121, 89, 101, 79, 69, 120, 29, 58, 50, 116, 11, 60, 12, 39, 95, 23, 2, 109, 84, 7, 43, 99, 98, 52, 70, 75, 102, 57, 19, 94, 36, 114, 88, 71, 56, 83, 6, 96, 107]
+Output:
+{{
+    "List 1": [115, 61, 35, 103, 90, 117, 86, 44, 63, 45, 40, 30, 74, 33, 31, 1],
+    "List 2": [118, 48, 38, 0, 119, 51, 64, 78, 15, 121, 89, 101, 79, 69, 120, 29],
+    "List 3": [58, 50, 116, 11, 60, 12, 39, 95, 23, 2, 109, 84, 7, 43, 99, 98],
+    "List 4": [52, 70, 75, 102, 57, 19, 94, 36, 114, 88, 71, 56, 83, 6, 96, 107]
+}}
+</Example>
+
+Input: {input}
+Output: """
+
+split_prompt128 = """<Instruction> Split the following list of 128 numbers into 8 lists of 16 numbers each, the first list should contain the first 16 numbers, the second list the second 16 numbers, the third list the third 16 numbers and the fourth list the fourth 16 numbers, the fifth list the fifth 16 numbers and so on.
+Only output the 8 lists in the following format without any additional text or thoughts!:
+{{
+    "List 1": [13, 35, 20, 96, 34, 18, 47, ...],
+    "List 2": [127, 126, 9, 21, 16, 77, 22, ...],
+    "List 3": [111, 122, 85, 73, 42, 105, 123, ...],
+    "List 4": [15, 33, 59, 67, 57, 104, 8, ...],
+    "List 5": [30, 89, 76, 12, 65, 84, 32, ...],
+    "List 6": [40, 7, 100, 108, 50, 14, 28, ...],
+    "List 7": [24, 53, 90, 17, 91, 81, 124, ...],
+    "List 8": [63, 5, 46, 125, 93, 49, 66, ...]
+}} </Instruction>
+
+<Example>
+Input: [124, 100, 176, 65, 28, 214, 201, 67, 127, 40, 193, 26, 212, 196, 12, 205, 39, 162, 190, 152, 186, 182, 125, 229, 114, 70, 189, 242, 155, 32, 47, 113, 99, 177, 57, 103, 156, 107, 226, 188, 31, 25, 49, 171, 17, 64, 254, 217, 35, 22, 248, 88, 251, 219, 84, 82, 167, 14, 116, 92, 105, 148, 119, 58, 13, 160, 81, 120, 74, 94, 173, 38, 101, 104, 91, 135, 208, 118, 136, 87, 75, 41, 197, 76, 249, 240, 86, 246, 231, 44, 29, 141, 241, 227, 239, 142, 222, 115, 129, 255, 216, 153, 0, 110, 36, 130, 6, 102, 209, 37, 143, 30, 51, 146, 71, 27, 181, 183, 2, 122, 77, 184, 56, 225, 108, 83, 106, 15]
+Output:
+{{
+    "List 1": [124, 100, 176, 65, 28, 214, 201, 67, 127, 40, 193, 26, 212, 196, 12, 205],
+    "List 2": [39, 162, 190, 152, 186, 182, 125, 229, 114, 70, 189, 242, 155, 32, 47, 113],
+    "List 3": [99, 177, 57, 103, 156, 107, 226, 188, 31, 25, 49, 171, 17, 64, 254, 217],
+    "List 4": [35, 22, 248, 88, 251, 219, 84, 82, 167, 14, 116, 92, 105, 148, 119, 58],
+    "List 5": [13, 160, 81, 120, 74, 94, 173, 38, 101, 104, 91, 135, 208, 118, 136, 87],
+    "List 6": [75, 41, 197, 76, 249, 240, 86, 246, 231, 44, 29, 141, 241, 227, 239, 142],
+    "List 7": [222, 115, 129, 255, 216, 153, 0, 110, 36, 130, 6, 102, 209, 37, 143, 30],
+    "List 8": [51, 146, 71, 27, 181, 183, 2, 122, 77, 184, 56, 225, 108, 83, 106, 15]
+}}
+</Example>
+
+Input: {input}
+Output: """
+
+def split(
+    graph, 
+    nodes,
+):
+    for node in nodes:
+        # 1. Send the prompt
+        node_idx = int(node)
+        graph_node = graph.nodes[node_idx]
+
+        num_elems = len(ast.literal_eval(graph_node["thought"]["set2"]))
+        if num_elems == 32:
+            prompt = split_prompt32
+        elif num_elems == 64:
+            prompt = split_prompt64
+        elif num_elems == 128:
+            prompt = split_prompt128
+        else:
+            raise ValueError("Invalid number of elements")
+        
+        out = llm(
+            prompt.format(
+                input=graph_node["thought"]["set2"]
+            ), 
+            model=model
+        )
+        
+        # Parse the result
+        as_dict = ast.literal_eval(out[0].replace("\n", ""))
+
+        # 2. Update the graph
+        for i in range(1, (num_elems // 16) + 1):
+            idx = max(list(graph.nodes)) + 1
+            graph.add_node(
+                idx, 
+                thought={
+                    "set1": graph_node["thought"]["set1"],
+                    "set2": str(as_dict[f"List {i}"]),
+                }, 
+                score=None
+            )
+            graph.add_edge(node_idx, idx)
+
+    return graph, False
 
 intersect_prompt = """<Instruction> Find the intersection of two sets of numbers. Output only the set of numbers that are present in both sets, no additional text. </Instruction>
 
@@ -83,6 +193,9 @@ def score(
         node_idx = int(node)
         graph_node = graph.nodes[node_idx]
         thought = graph_node["thought"]
+
+        if "score" in graph_node.keys() and graph_node["score"] is not None:
+            continue
 
         errors = 0
         try:
@@ -192,6 +305,44 @@ def refine(
 
     return graph, False
 
+aggregate_prompt = """<Instruction> Merge the following 2 lists into one list by appending the second list to the first list.
+Only output the final list without any additional text or thoughts! </Instruction>
+
+List 1: {input1}
+List 2: {input2}
+"""
+
+def aggregate(
+    graph, 
+    nodes,
+):
+    if len(nodes) != 2:
+        raise ValueError("aggregate action requires exactly 2 nodes to be selected")
+    
+    # 1. Send the prompt
+    out = llm(
+        aggregate_prompt.format(
+            input1=graph.nodes[int(nodes[0])]["thought"],
+            input2=graph.nodes[int(nodes[1])]["thought"]
+        ),
+        model=model
+    )
+    
+    # 2. Update the graph
+    idx = max(list(graph.nodes)) + 1
+    graph.add_node(
+        idx, 
+        thought=out[0],
+        score=graph.nodes[int(nodes[0])]["score"] + graph.nodes[int(nodes[1])]["score"],
+        original = None,
+    )
+
+    for node in nodes:
+        node_idx = int(node)
+        graph.add_edge(node_idx, idx)
+
+    return graph, False
+
 def groundtruth(
     graph, 
     nodes,
@@ -220,7 +371,7 @@ def groundtruth(
 
     return graph, any_match
 
-# IO
+# Baselines
 
 def io(
     graph, 
@@ -228,7 +379,34 @@ def io(
 ):
     return intersect(graph, nodes)
 
-# CoT
+def _tot_schedule(
+    width: int,
+    depth: int,
+) -> int:
+    return _common_tot_schedule(
+        width, 
+        depth, 
+        "intersect", 
+        "refine"
+    )
+
+def _got_schedule(    
+    branches:int,
+    generate_attempts:int,
+    aggregate_attempts:int,
+    post_aggregate_keepbest: bool,
+    post_aggregate_refine: bool,
+    refine_attempts:int,
+) -> int:        
+    return _common_got_schedule(
+        branches=branches,
+        generate_action="intersect",
+        generate_attempts=generate_attempts,
+        aggregate_attempts=aggregate_attempts,
+        post_aggregate_keepbest=post_aggregate_keepbest,
+        post_aggregate_refine=post_aggregate_refine,
+        refine_attempts=refine_attempts,
+    )
 
 cot_prompt = """<Instruction> Find the intersection of two sets of numbers. You can generate any intermediate solutions, but the final output should be the set of numbers that are present in both sets, prefixed with "Output: ". </Instruction>
 
@@ -293,27 +471,3 @@ def cot(
         graph.add_edge(node_idx, idx)
 
     return graph, False
-
-# ToT
-
-def _tot_schedule(
-    width: int,
-    depth: int,
-) -> int:
-    return _common_tot_schedule(
-        width, 
-        depth, 
-        "intersect", 
-        "refine"
-    )
-
-# GoT
-
-def _got_schedule(    
-    branches:int,
-    attempts:int,
-) -> int:        
-    return _common_got_schedule(
-        branches,
-        attempts,
-    )
