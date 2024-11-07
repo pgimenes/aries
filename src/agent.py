@@ -12,8 +12,18 @@ class IOAgent:
         self.task = task
 
         self.itr = 0
-        self._action_list = getattr(self.task, "_io_action_list")
-        self._node_list = getattr(self.task, "_io_node_list")
+        self._action_list = [
+            "io",
+            "score",
+            "groundtruth",
+        ]
+
+        self._node_list = [
+            "0",
+            "1",
+            "1",
+        ]
+
         self.max_iterations = len(self._action_list)
 
     def get_action(self, obs: tuple[int, int, bool]) -> int:
@@ -50,8 +60,16 @@ class CoTAgent:
                 [str(num_branches + 1)],
             ]
         else:
-            self._action_list = getattr(self.task, "_cot_action_list")
-            self._node_list = getattr(self.task, "_cot_node_list")
+            self._action_list = [
+                "cot",
+                "score",
+                "groundtruth",
+            ]
+            self._node_list = [
+                "0",
+                "1",
+                "1",
+            ]
 
         self.max_iterations = len(self._action_list)
 
@@ -112,8 +130,14 @@ class GoTAgent:
         model: str,
         problem_definition: str,
         actions: dict[str, str],
-        branches: int = 2,
-        attempts: int = 5,
+        
+        # GoT parameters
+        branches:int,
+        generate_attempts:int,
+        aggregate_attempts:int,
+        post_aggregate_keepbest: bool,
+        post_aggregate_refine: bool,
+        refine_attempts:int,
     ):
         self.env = env
         self.task = task
@@ -123,7 +147,11 @@ class GoTAgent:
         self._got_action = 0
         self._actions, self._action_nodes = schedule(
             branches,
-            attempts,
+            generate_attempts,
+            aggregate_attempts,
+            post_aggregate_keepbest,
+            post_aggregate_refine,
+            refine_attempts,
         )
 
         self.problem_definition = problem_definition

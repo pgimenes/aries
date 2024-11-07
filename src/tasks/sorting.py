@@ -1,6 +1,10 @@
 from llm import llm
 import ast
-import re
+from .common import (
+    _common_tot_schedule, 
+    _common_got_schedule, 
+    common_keepbest, 
+)
 
 model = "gpt-4"
 
@@ -16,132 +20,9 @@ actions = {
     "groundtruth": "Compare the sorted list in a node with the ground truth. When a node doesn't match the ground truth, it will be marked with 'matches_ground_truth: False'."
 }
 
-# IO
+# Implementation
 
-_io_action_list = [
-    "sort",
-    "score",
-    "groundtruth",
-]
-
-_io_node_list = [
-    "0",
-    "1",
-    "1",
-]
-
-# CoT
-
-_cot_action_list = [
-    "sort_cot",
-    "score",
-    "groundtruth",
-]
-_cot_node_list = [
-    "0",
-    "1",
-    "1",
-]
-
-# ToT
-
-def _tot_schedule(
-        width: int,
-        depth: int,
-) -> int:
-    actions = []
-    action_nodes = []
-    keepbest_nodes = []
-    last_node = 0
-
-    # Sorting
-    actions += ["sort"]
-    action_nodes += [["0"] * width]
-    last_node += width
-
-    # Score
-    score_nodes = [str(i) for i in range(1, width + 1)]
-    actions += ["score"]
-    action_nodes += [score_nodes]
-
-    # Keep best
-    actions += ["keepbest"]
-    action_nodes += [[str(i) for i in range(1, width + 1)]]
-    last_node += 1
-    keepbest_nodes.append(str(last_node))
-
-    for i in range(depth - 1):
-        # Refine
-        refine_node = last_node
-        actions += ["refine"]
-        action_nodes += [[str(refine_node)] * width]
-        last_node += width
-
-        # Score
-        score_nodes = [str(j) for j in range(last_node - width + 1, last_node + 1)]
-        actions += ["score"]
-        action_nodes += [score_nodes]
-
-        # Keep best
-        actions += ["keepbest"]
-        action_nodes += [[str(j) for j in range(last_node - width + 1, last_node + 1)]]
-        last_node += 1
-        keepbest_nodes.append(str(last_node))
-
-    # Keep best
-    actions += ["keepbest"]
-    action_nodes += [keepbest_nodes]
-    last_node += 1
-
-    # Ground truth
-    actions += ["groundtruth"]
-    action_nodes += [[str(last_node)]]
-    last_node += 1
-    return actions, action_nodes
-
-# GoT
-
-def _got_schedule(    
-    split_branches:int,
-    sort_attempts:int,
-) -> int:        
-    # Create two split branches
-    actions = ["split"]
-    action_nodes = [["0"]]
-
-    last_node = 2
-    keepbest_nodes = []
-    for split_branch in range(1, split_branches + 1):
-        
-        # Sorting
-        sorted_nodes = []
-        actions += ["sort"]
-        action_nodes += [[str(split_branch)] * sort_attempts]
-        sorted_nodes += list(range(last_node + 1, last_node + 1 + sort_attempts))
-        last_node += sort_attempts
-
-        # Scoring
-        actions += ["score"]
-        action_nodes += [sorted_nodes]
-
-        # Keep best
-        actions += ["keepbest"]
-        action_nodes += [sorted_nodes]
-        last_node += 1
-        keepbest_nodes += [str(last_node)]
-
-    # Aggregate
-    actions += ["aggregate"]
-    action_nodes += [keepbest_nodes]
-    last_node += 1
-
-    # Groundtruth
-    actions += ["groundtruth"]
-    action_nodes += [[str(last_node)]]
-    last_node += 1
-    return actions, action_nodes
-
-split_prompt = """<Instruction> Split the following list of numbers into 2 lists, the first list should contain the first half of the numbers and the second list the second half of the numbers.
+split32 = """<Instruction> Split the following list of numbers into 2 lists, the first list should contain the first half of the numbers and the second list the second half of the numbers.
 Only output the final 2 lists in the following format without any additional text or thoughts!:
 {{
     "List 1": [3, 4, 3, 5, 7, 8, 1, ...],
@@ -159,6 +40,58 @@ Output:
 
 Input: {input}"""
 
+split64 = """<Instruction> Split the following list of 64 numbers into 4 lists of 16 numbers each, the first list should contain the first 16 numbers, the second list the second 16 numbers, the third list the third 16 numbers and the fourth list the fourth 16 numbers.
+Only output the final 4 lists in the following format without any additional text or thoughts!:
+{{
+    "List 1": [3, 4, 3, 5, 7, 8, 1, ...],
+    "List 2": [2, 9, 2, 4, 7, 1, 5, ...],
+    "List 3": [6, 9, 8, 1, 9, 2, 4, ...],
+    "List 4": [9, 0, 7, 6, 5, 6, 6, ...]
+}} </Instruction>
+
+<Example>
+Input: [3, 1, 9, 3, 7, 5, 5, 4, 8, 1, 5, 3, 3, 2, 3, 0, 9, 7, 2, 2, 4, 4, 8, 5, 0, 8, 7, 3, 3, 8, 7, 0, 9, 5, 1, 6, 7, 6, 8, 9, 0, 3, 0, 6, 3, 4, 8, 0, 6, 9, 8, 4, 1, 2, 9, 0, 4, 8, 8, 9, 9, 8, 5, 9]
+Output: 
+{{
+    "List 1": [3, 1, 9, 3, 7, 5, 5, 4, 8, 1, 5, 3, 3, 2, 3, 0],
+    "List 2": [9, 7, 2, 2, 4, 4, 8, 5, 0, 8, 7, 3, 3, 8, 7, 0],
+    "List 3": [9, 5, 1, 6, 7, 6, 8, 9, 0, 3, 0, 6, 3, 4, 8, 0],
+    "List 4": [6, 9, 8, 4, 1, 2, 9, 0, 4, 8, 8, 9, 9, 8, 5, 9]
+}}
+</Example>
+
+Input: {input}"""
+
+split128 = """<Instruction> Split the following list of 128 numbers into 8 lists of 16 numbers each, the first list should contain the first 16 numbers, the second list the second 16 numbers, the third list the third 16 numbers, the fourth list the fourth 16 numbers, the fifth list the fifth 16 numbers and so on.
+Only output the final 8 lists in the following format without any additional text or thoughts!:
+{{
+    "List 1": [3, 4, 3, 5, 7, 8, 1, ...],
+    "List 2": [2, 9, 2, 4, 7, 1, 5, ...],
+    "List 3": [6, 9, 8, 1, 9, 2, 4, ...],
+    "List 4": [9, 0, 7, 6, 5, 6, 6, ...],
+    "List 5": [7, 9, 4, 1, 1, 8, 1, ...],
+    "List 6": [1, 9, 0, 4, 3, 3, 5, ...],
+    "List 7": [2, 4, 3, 5, 8, 2, 2, ...],
+    "List 8": [4, 2, 1, 2, 7, 6, 8, ...]
+}} </Instruction>
+
+<Example>
+Input: [6, 0, 2, 3, 8, 3, 0, 2, 4, 5, 4, 1, 3, 6, 9, 8, 3, 1, 2, 6, 5, 3, 9, 8, 9, 1, 6, 1, 0, 2, 8, 9, 5, 3, 1, 2, 7, 9, 4, 8, 8, 9, 3, 2, 8, 4, 7, 4, 3, 8, 7, 3, 6, 4, 0, 0, 6, 8, 1, 5, 8, 7, 5, 1, 4, 0, 8, 6, 1, 3, 6, 1, 7, 6, 8, 7, 3, 7, 8, 2, 0, 8, 2, 6, 0, 0, 9, 9, 8, 6, 9, 4, 8, 5, 5, 0, 0, 9, 3, 9, 4, 0, 5, 6, 2, 4, 6, 7, 7, 7, 8, 0, 4, 9, 1, 4, 8, 5, 1, 4, 4, 7, 4, 9, 3, 9, 6, 7]
+Output: 
+{{
+    "List 1": [6, 0, 2, 3, 8, 3, 0, 2, 4, 5, 4, 1, 3, 6, 9, 8],
+    "List 2": [3, 1, 2, 6, 5, 3, 9, 8, 9, 1, 6, 1, 0, 2, 8, 9],
+    "List 3": [5, 3, 1, 2, 7, 9, 4, 8, 8, 9, 3, 2, 8, 4, 7, 4],
+    "List 4": [3, 8, 7, 3, 6, 4, 0, 0, 6, 8, 1, 5, 8, 7, 5, 1],
+    "List 5": [4, 0, 8, 6, 1, 3, 6, 1, 7, 6, 8, 7, 3, 7, 8, 2],
+    "List 6": [0, 8, 2, 6, 0, 0, 9, 9, 8, 6, 9, 4, 8, 5, 5, 0],
+    "List 7": [0, 9, 3, 9, 4, 0, 5, 6, 2, 4, 6, 7, 7, 7, 8, 0],
+    "List 8": [4, 9, 1, 4, 8, 5, 1, 4, 4, 7, 4, 9, 3, 9, 6, 7]
+}}
+</Example>
+
+Input: {input}"""
+
 def split(
     graph, 
     nodes,
@@ -167,23 +100,44 @@ def split(
         # 1. Send the prompt
         node_idx = int(node)
         graph_node = graph.nodes[node_idx]
-        out = llm(split_prompt.format(input=graph_node["thought"]), model=model)
+
+        num_elems = len(ast.literal_eval(graph_node["thought"]))
+        if num_elems == 32:
+            split_prompt = split32
+        elif num_elems == 64:
+            split_prompt = split64
+        elif num_elems == 128:
+            split_prompt = split128
+        else:
+            raise ValueError("Invalid number of elements in the list")
+
+        out = llm(
+            split_prompt.format(
+                input=graph_node["thought"]
+            ), 
+            model=model
+        )
         
         # Parse the result
         as_dict = ast.literal_eval(out[0].replace("\n", ""))
 
         # 2. Update the graph
-        idx = max(list(graph.nodes)) + 1
-        graph.add_node(
-            idx, 
-            thought=as_dict["List 1"], 
-            score=None
-        )
-        graph.add_edge(node_idx, idx)
+        for i in range(num_elems // 32):
+            idx = max(list(graph.nodes)) + 1
+            graph.add_node(
+                idx, 
+                thought=as_dict[f"List {2*i + 1}"], 
+                score=None
+            )
+            graph.add_edge(node_idx, idx)
 
-        idx = max(list(graph.nodes)) + 1
-        graph.add_node(idx, thought=as_dict["List 2"], score=None)
-        graph.add_edge(node_idx, idx)
+            idx = max(list(graph.nodes)) + 1
+            graph.add_node(
+                idx, 
+                thought=as_dict[f"List {2*i + 2}"], 
+                score=None
+            )
+            graph.add_edge(node_idx, idx)
 
     return graph, False
 
@@ -218,73 +172,6 @@ def sort(
         graph.add_node(
             idx, 
             thought=out[0], 
-            score=None,
-            original = graph_node["thought"],
-        )
-        graph.add_edge(node_idx, idx)
-
-    return graph, False
-
-sort_cot_prompt = """<Instruction> Sort the following list of numbers in ascending order. You can generate any intermediate lists, but the final output should be the sorted list of numbers, prefixed with "Output: ". </Instruction>
-
-<Approach>
-To sort the list of numbers follow these steps:
-1. Split the list of numbers into two to four unsorted sublists, each containing an equal number of elements from the original list (make sure they don't overlap).
-2. Sort each of the unsorted sublists.
-3. Merge the sorted sublists into a single sorted list using the merging algorithm from merge sort.
-</Approach>
-
-<Examples>
-Input: [4, 5, 3, 3, 7, 3, 0, 5, 0, 2, 8, 0, 2, 1, 6, 9]
-Unsorted Subarrays:
-[4, 5, 3, 3, 7, 3, 0, 5]
-[0, 2, 8, 0, 2, 1, 6, 9]
-Sorted Subarrays:
-[0, 3, 3, 3, 4, 5, 5, 7]
-[0, 0, 1, 2, 2, 6, 8, 9]
-Output: [0, 0, 0, 1, 2, 2, 3, 3, 3, 4, 5, 5, 6, 7, 8, 9]
-
-Input: [6, 4, 5, 7, 5, 6, 9, 7, 6, 9, 4, 6, 9, 8, 1, 9, 2, 4, 9, 0, 7, 6, 5, 6, 6, 2, 8, 3, 9, 5, 6, 1]
-Unsorted Subarrays:
-[6, 4, 5, 7, 5, 6, 9, 7, 6, 9, 4, 6, 9, 8, 1, 9]
-[2, 4, 9, 0, 7, 6, 5, 6, 6, 2, 8, 3, 9, 5, 6, 1]
-Sorted Subarrays:
-[1, 4, 4, 5, 5, 6, 6, 6, 6, 7, 7, 8, 9, 9, 9, 9]
-[0, 1, 2, 2, 3, 4, 5, 5, 6, 6, 6, 6, 7, 8, 9, 9]
-Output: [0, 1, 1, 2, 2, 3, 4, 4, 4, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 6, 6, 7, 7, 7, 8, 8, 9, 9, 9, 9, 9, 9]
-
-Input: [3, 7, 0, 2, 8, 1, 2, 2, 2, 4, 7, 8, 5, 5, 3, 9, 4, 3, 5, 6, 6, 4, 4, 5, 2, 0, 9, 3, 3, 9, 2, 1, 9, 3, 1, 8, 1, 8, 6, 0, 1, 6, 1, 7, 4, 4, 6, 3, 3, 7, 9, 3, 6, 0, 3, 4, 5, 6, 6, 9, 9, 9, 7, 3]
-Unsorted Subarrays:
-[3, 7, 0, 2, 8, 1, 2, 2, 2, 4, 7, 8, 5, 5, 3, 9]
-[4, 3, 5, 6, 6, 4, 4, 5, 2, 0, 9, 3, 3, 9, 2, 1]
-[9, 3, 1, 8, 1, 8, 6, 0, 1, 6, 1, 7, 4, 4, 6, 3]
-[3, 7, 9, 3, 6, 0, 3, 4, 5, 6, 6, 9, 9, 9, 7, 3]
-Sorted Subarrays:
-[0, 1, 2, 2, 2, 2, 3, 3, 4, 5, 5, 7, 7, 8, 8, 9]
-[0, 1, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 6, 6, 9, 9]
-[0, 1, 1, 1, 1, 3, 3, 4, 4, 6, 6, 6, 7, 8, 8, 9]
-[0, 3, 3, 3, 3, 4, 5, 6, 6, 6, 7, 7, 9, 9, 9, 9]
-Output: [0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 8, 8, 8, 8, 9, 9, 9, 9, 9, 9, 9, 9]
-</Examples>
-
-Input: {input}"""
-
-def sort_cot(
-    graph, 
-    nodes,
-):
-    for node in nodes:
-        # 1. Send the prompt
-        node_idx = int(node)
-        graph_node = graph.nodes[node_idx]
-        out = llm(sort_cot_prompt.format(input=graph_node["thought"]), model=model)
-        output = out[0].split("Output: ")[-1]
-        
-        # 2. Update the graph
-        idx = max(list(graph.nodes)) + 1
-        graph.add_node(
-            idx, 
-            thought=output, 
             score=None,
             original = graph_node["thought"],
         )
@@ -397,63 +284,11 @@ def score(
 
     return graph, False
 
-def get_parent_nodes(graph, node):
-    parent_nodes = []
-    for edge in graph.edges:
-        if edge[1] == node:
-            parent_nodes.append(edge[0])
-    return parent_nodes
-
 def keepbest(
     graph, 
     nodes,
 ):
-    min_score = 1000000
-    best_node_idx = nodes[0] # if all nodes have the same score, keep the first one
-    
-    # Node id for the new node
-    # (decide before deleting nodes)
-    new_idx = max(list(graph.nodes)) + 1
-    
-    if new_idx in graph.nodes:
-        raise ValueError(f"new_idx {new_idx} already exists in graph")
-
-    # Find node with highest score
-    for node in nodes:
-        graph_node = graph.nodes[int(node)]
-        
-        if graph_node["score"] < min_score:
-            min_score = graph_node["score"]
-            best_node_idx = node
-
-    # Duplicate the best node
-    added = False
-    nodes_to_remove = []
-    for _, node in enumerate(nodes):
-        node_idx = int(node)
-        
-        if node == best_node_idx:
-            added = True
-            graph.add_node(
-                new_idx, 
-                thought=graph.nodes[int(best_node_idx)]["thought"], 
-                score=min_score,
-            )
-
-            parent_node = get_parent_nodes(graph, node_idx)[0]
-            graph.add_edge(parent_node, new_idx)
-        
-        # Flag node to remove
-        nodes_to_remove.append(node_idx)
-
-    if not added:
-        breakpoint()
-
-    # Remove the other nodes
-    for node in nodes_to_remove:
-        graph.remove_node(node)
-
-    return graph, False
+    return common_keepbest(graph, nodes)
 
 
 aggregate_prompt = """<Instruction> Merge the following 2 sorted lists of length X and Y into one sorted list of length X + Y using a merge sort style approach.
@@ -491,8 +326,20 @@ def aggregate(
     )
     
     # 2. Update the graph
+    combined_list = str(
+        ast.literal_eval(
+            graph.nodes[int(nodes[0])]["thought"]
+        ) + ast.literal_eval(
+            graph.nodes[int(nodes[1])]["thought"]
+        )
+    )
     idx = max(list(graph.nodes)) + 1
-    graph.add_node(idx, thought=out[0], score=None)
+    graph.add_node(
+        idx, 
+        thought=out[0],
+        score=None,
+        original = combined_list,
+    )
 
     for node in nodes:
         node_idx = int(node)
@@ -527,7 +374,109 @@ def groundtruth(
         except:
             graph.nodes[node_idx]["matches_ground_truth"] = False
             pass
-
-
         
     return graph, any_match
+
+# Baselines
+
+def io(
+    graph,
+    nodes,
+):
+    return sort(graph, nodes)
+
+def _tot_schedule(
+        width: int,
+        depth: int,
+) -> int:
+    return _common_tot_schedule(
+        width=width,
+        depth=depth,
+        generate_action="sort",
+        refine_action="refine",
+    )
+
+def _got_schedule(
+    branches:int,
+    generate_attempts:int,
+    aggregate_attempts:int,
+    post_aggregate_keepbest: bool,
+    post_aggregate_refine: bool,
+    refine_attempts:int,
+) -> int:
+    return _common_got_schedule(
+        branches=branches,
+        generate_action="sort",
+        generate_attempts=generate_attempts,
+        aggregate_attempts=aggregate_attempts,
+        post_aggregate_keepbest=post_aggregate_keepbest,
+        post_aggregate_refine=post_aggregate_refine,
+        refine_attempts=refine_attempts,
+    )
+
+sort_cot_prompt = """<Instruction> Sort the following list of numbers in ascending order. You can generate any intermediate lists, but the final output should be the sorted list of numbers, prefixed with "Output: ". </Instruction>
+
+<Approach>
+To sort the list of numbers follow these steps:
+1. Split the list of numbers into two to four unsorted sublists, each containing an equal number of elements from the original list (make sure they don't overlap).
+2. Sort each of the unsorted sublists.
+3. Merge the sorted sublists into a single sorted list using the merging algorithm from merge sort.
+</Approach>
+
+<Examples>
+Input: [4, 5, 3, 3, 7, 3, 0, 5, 0, 2, 8, 0, 2, 1, 6, 9]
+Unsorted Subarrays:
+[4, 5, 3, 3, 7, 3, 0, 5]
+[0, 2, 8, 0, 2, 1, 6, 9]
+Sorted Subarrays:
+[0, 3, 3, 3, 4, 5, 5, 7]
+[0, 0, 1, 2, 2, 6, 8, 9]
+Output: [0, 0, 0, 1, 2, 2, 3, 3, 3, 4, 5, 5, 6, 7, 8, 9]
+
+Input: [6, 4, 5, 7, 5, 6, 9, 7, 6, 9, 4, 6, 9, 8, 1, 9, 2, 4, 9, 0, 7, 6, 5, 6, 6, 2, 8, 3, 9, 5, 6, 1]
+Unsorted Subarrays:
+[6, 4, 5, 7, 5, 6, 9, 7, 6, 9, 4, 6, 9, 8, 1, 9]
+[2, 4, 9, 0, 7, 6, 5, 6, 6, 2, 8, 3, 9, 5, 6, 1]
+Sorted Subarrays:
+[1, 4, 4, 5, 5, 6, 6, 6, 6, 7, 7, 8, 9, 9, 9, 9]
+[0, 1, 2, 2, 3, 4, 5, 5, 6, 6, 6, 6, 7, 8, 9, 9]
+Output: [0, 1, 1, 2, 2, 3, 4, 4, 4, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 6, 6, 7, 7, 7, 8, 8, 9, 9, 9, 9, 9, 9]
+
+Input: [3, 7, 0, 2, 8, 1, 2, 2, 2, 4, 7, 8, 5, 5, 3, 9, 4, 3, 5, 6, 6, 4, 4, 5, 2, 0, 9, 3, 3, 9, 2, 1, 9, 3, 1, 8, 1, 8, 6, 0, 1, 6, 1, 7, 4, 4, 6, 3, 3, 7, 9, 3, 6, 0, 3, 4, 5, 6, 6, 9, 9, 9, 7, 3]
+Unsorted Subarrays:
+[3, 7, 0, 2, 8, 1, 2, 2, 2, 4, 7, 8, 5, 5, 3, 9]
+[4, 3, 5, 6, 6, 4, 4, 5, 2, 0, 9, 3, 3, 9, 2, 1]
+[9, 3, 1, 8, 1, 8, 6, 0, 1, 6, 1, 7, 4, 4, 6, 3]
+[3, 7, 9, 3, 6, 0, 3, 4, 5, 6, 6, 9, 9, 9, 7, 3]
+Sorted Subarrays:
+[0, 1, 2, 2, 2, 2, 3, 3, 4, 5, 5, 7, 7, 8, 8, 9]
+[0, 1, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 6, 6, 9, 9]
+[0, 1, 1, 1, 1, 3, 3, 4, 4, 6, 6, 6, 7, 8, 8, 9]
+[0, 3, 3, 3, 3, 4, 5, 6, 6, 6, 7, 7, 9, 9, 9, 9]
+Output: [0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 8, 8, 8, 8, 9, 9, 9, 9, 9, 9, 9, 9]
+</Examples>
+
+Input: {input}"""
+
+def cot(
+    graph, 
+    nodes,
+):
+    for node in nodes:
+        # 1. Send the prompt
+        node_idx = int(node)
+        graph_node = graph.nodes[node_idx]
+        out = llm(sort_cot_prompt.format(input=graph_node["thought"]), model=model)
+        output = out[0].split("Output: ")[-1]
+        
+        # 2. Update the graph
+        idx = max(list(graph.nodes)) + 1
+        graph.add_node(
+            idx, 
+            thought=output, 
+            score=None,
+            original = graph_node["thought"],
+        )
+        graph.add_edge(node_idx, idx)
+
+    return graph, False
