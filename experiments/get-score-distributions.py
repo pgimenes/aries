@@ -1,9 +1,10 @@
 import re
 import numpy
 
-task = "set-intersection64"
+model = "llama-3.1-405b"
+task = "sorting32"
 method = "cot"
-tot_final_step = 78
+tot_final_step = 34
 
 def extract_scores(log_content):
     # Regular expression to find 'score' followed by any number
@@ -19,7 +20,7 @@ def extract_scores(log_content):
     return scores
 
 # Load your log content from a file (e.g., "log.txt")
-with open(f"logs/llama-3.1-70b/{task}-{method}.log", "r") as file:
+with open(f"logs/{model}/{task}-{method}.log", "r") as file:
     log_content = file.read()
 
 # Extract and parse scores
