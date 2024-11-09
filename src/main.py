@@ -140,16 +140,19 @@ def run(args, data):
             # Run agent on environment
             done = False
             itr = 0    
-            max_iterations = agent.max_iterations
             while not done:
-                if itr >= max_iterations:
+                if itr >= agent.max_iterations:
                     break
 
                 action = agent.get_action(obs)
-                obs, reward, terminated, truncated, info = env.step(action)
-                done = terminated or truncated
 
-                itr += 1
+                try:
+                    obs, reward, terminated, truncated, info = env.step(action)
+                    agent.action_history.append(action)
+                    done = terminated or truncated
+                    itr += 1
+                except:
+                    print(f"Action failed, trying again. Action: {action}")
 
             if done:
                 print(f"Result: success")
@@ -187,7 +190,12 @@ def argparser():
         default="sorting32"
     )
     parser.add_argument(
-        "--max_iterations", 
+        "--start", 
+        type=int, 
+        default=0,
+    )
+    parser.add_argument(
+        "--end", 
         type=int, 
         default=100,
     )
@@ -249,6 +257,6 @@ if __name__ == "__main__":
         with open(f"data/{args.task}.csv") as f:
             data = pd.read_csv(f)
 
-    data = data[:args.max_iterations]
+    data = data[args.start:args.end]
 
     run(args, data)

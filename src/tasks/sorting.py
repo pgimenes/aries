@@ -11,14 +11,363 @@ model = "gpt-4"
 problem_definition = "Sort a list of numbers in ascending order."
 
 actions = {
-    "split": "Split a sublist into two to decompose the problem. This creates two new nodes connected to the original node.",
-    "sort": "Sort a sublist. This creates a new node with the sorted sublist, connected to the original node.",
-    "score": "Count the number of mistakes in the currently sorted sublist and mark the node with the number of mistakes. This action doesn't create any new nodes.",
-    "refine": "Refine a sublist by fixing any existing mistakes. This action should only be called on nodes that have already been scored. This creates a new node connected to the original node.",
-    "keepbest": "Out of the selected nodes, keep the one with the highest score, and delete the rest. This action should only be called on nodes that have already been scored.",
-    "aggregate": "Merge the sorted sublists of the selected nodes into a single sorted list. You can only aggregate two nodes at a time. This action creates a new node connected to the two selected nodes.",
-    "groundtruth": "Compare the sorted list in a node with the ground truth. When a node doesn't match the ground truth, it will be marked with 'matches_ground_truth: False'."
+    "split": {
+        "description": "Split a sublist into two to decompose the problem.",
+        "preconditions": "",
+        "effects": "Two new nodes are created, each containing a sublist of the original list. The new nodes are connected to the original node.",
+    },
+    "sort": {
+        "description": "Sort a sublist.",
+        "preconditions": "",
+        "effects": "A new node is created with the sorted sublist, connected to the original node.",
+    },
+    "aggregate": {
+        "description": "Merge the sorted sublists of the selected nodes into a single sorted list.",
+        "preconditions": "Only two nodes must be selected.",
+        "effects": "A new node is created with the merged sorted list, connected to the two selected nodes.",
+    },
+    "score": {
+        "description": "Count the number of mistakes in the currently sorted sublist.",
+        "preconditions": "",
+        "effects": "The error count is annotated in the metadata of each node, and no new nodes are created.",
+    },
+    "keepbest": {
+        "description": "Out of the selected nodes, keep the one with the highest score, and delete the rest.",
+        "preconditions": "The selected nodes must have been scored.",
+        "effects": "All selected nodes are deleted, but the one with the highest score is duplicated as a new node.",
+    },
+    "refine": {
+        "description": "Refine the sorting of a sublist.",
+        "preconditions": "The selected node must have been scored.",
+        "effects": "A new node is created with a refined sorting of the selected node, connected to the selected node.",
+    },
+    "groundtruth": {
+        "description": "Compare the sorted list in a node with the ground truth.",
+        "preconditions": "",
+        "effects": "The node is annotated with 'matches_ground_truth: True' or 'False'.",
+    }
 }
+
+example_list = [
+    # Sort directly
+    """<example>
+INPUT:
+Previous actions:
+
+Current graph:
+
+Nodes:
+0: {'thought': '[0, 0, 5, 9, 0, 7, 9, 9, 1, 2, 6, 1, 1, 9, 0, 1, 3, 5, 2, 3, 5, 6, 0, 2, 7, 4, 6, 2, 9, 7, 5, 9]'}
+
+Edges:
+
+OUTPUT:
+Analysis: 
+
+A. Action history: No actions have been taken yet. 
+
+B. Graph state: The graph currently has 1 node and 0 edges. Node 0 contains the initial problem. 
+
+C. Strategy analysis: The strategy for solving the problem has not been determined yet.
+
+D. Next action options
+    1. Attempt to sort the entire list directly without decomposing it. This may work if the list is already mostly sorted.
+
+    2. Decompose the list into smaller sublists, sort them individually, then merge the results to produce a solution. This may be more effective if the list is not already mostly sorted.
+
+Next action: sort
+Nodes: [0]
+
+Explanation: The list in node 0 appears easy to sort since many elements are already in order, so we can attempt to sort the entire list directly, then score the sort the sorting attempt. If there are many mistakes, we can decompose the list into two smaller sublists, sort them individually, then merge the results to produce a solution.
+</example>""",
+    
+    # Decompose, sort, merge strategy
+    """<example>
+INPUT:
+Previous actions:
+
+Step 1: split
+Nodes: [0]
+Explanation: To solve this problem, we should decompose node 0 into smaller sublists and sort them individually, since sorting smaller sublists is less likely to introduce errors. The strategy will be to decompose into two lists, sort them individually, then score each sorted sublist to identify whether any mistakes were introduced. Once we find successfully sorted sublists, we can start merging them to find the sorted version of node 0. 
+
+Step 2: sort
+Nodes: [1, 2]
+Explanation: We are continuing the strategy outlined in step 1. Currently, the list in node 0 has been split into two sublists in nodes 1 and 2. The next step is to sort each of these sublists individually. We will start by attempting to sort each sublist once. Next, we will score each sorting attempt to identify any errors. If any errors are found, we may need to perform additional sorting attempts until a correct sorting is achieved.
+
+Step 3: score
+Nodes: [3, 4]
+Explanation: We are continuing the strategy outlined in step 1. Nodes 3 and 4 are sorted versions of nodes 1 and 2, which are sublists of node 0. The nodes are marked with a score of None, so the next step is to check if the sublists were correctly sorted. If any mistakes are found, we may need to perform additional sorting attempts until a correct sorting is achieved. Otherwise, we can merge nodes 3 and 4 to find the sorted version of node 0.
+
+Step 4: aggregate
+Nodes: [3, 4]
+Explanation: We are continuing the strategy outlined in step 1. Currently, the list in node 0 has been split into two sublists in nodes 1 and 2. Nodes 3 and 4 are sorted correctly sorted versions of nodes 1 and 2, so we can now aggregate them to find the sorted version of node 0. We will start by performing a single aggregation attempt.If any mistakes are found, we may need to perform additional aggregation attempts until a correct solution is achieved.
+
+Current graph:
+
+Nodes:
+0: {'thought': '[0, 0, 5, 9, 0, 7, 9, 9, 1, 2, 6, 1, 1, 9, 0, 1, 3, 5, 2, 3, 5, 6, 0, 2, 7, 4, 6, 2, 9, 7, 5, 9]'}
+1: {'thought': [0, 0, 5, 9, 0, 7, 9, 9, 1, 2, 6, 1, 1, 9, 0, 1], 'score': None}
+2: {'thought': [3, 5, 2, 3, 5, 6, 0, 2, 7, 4, 6, 2, 9, 7, 5, 9], 'score': None}
+3: {'thought': '[0, 0, 0, 0, 1, 1, 1, 1, 2, 5, 6, 7, 9, 9, 9, 9]', 'score': 0, 'original': [0, 0, 5, 9, 0, 7, 9, 9, 1, 2, 6, 1, 1, 9, 0, 1]}
+4: {'thought': '[0, 2, 2, 2, 3, 3, 4, 5, 5, 5, 6, 6, 7, 7, 9, 9]', 'score': 0, 'original': [3, 5, 2, 3, 5, 6, 0, 2, 7, 4, 6, 2, 9, 7, 5, 9]}
+5: {'thought': '[0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 4, 5, 5, 5, 5, 6, 6, 6, 7, 7, 7, 9, 9, 9, 9, 9, 9]', 'score': None}
+
+Edges:
+(0, 1): {}
+(0, 2): {}
+(1, 3): {}
+(2, 4): {}
+(3, 5): {}
+(4, 5): {}
+
+OUTPUT:
+Analysis: 
+A. Action history: The current strategy is to decompose the initial list into two smaller sublists, sort them individually, then merge them to produce a solution to the original problem. In step 1, the list was decomposed into two sublists. In step 2, the sublists were sorted. In step 3, the sorted sublists were scored, showing that both sublists were correctly sorted. In step 4, the correctly sorted sublists were aggregated. 
+
+B. Graph state: The graph currently has 6 nodes and 6 edges. Node 0 has the initial problem. Nodes 1 and 2 represent sublists of the original list, obtained in step 1. Nodes 3 and 4 were obtained in step 2, and they represent attempted sortings of the sublists in nodes 1 and 2. Nodes 3 and 4 both have a score of 0, marked in step 3. Node 5 is the result of aggregating nodes 3 and 4, obtained in step 4. The score of node 5 is None, indicating it has not been scored yet. 
+
+C. Strategy analysis: The strategy so far is partially successful, since the sublists in nodes 1 and 2 were correctly sorted into nodes 3 and 4. However, the strategy is still pending since we don't know yet if the aggregation was successful.
+
+D. Next action options
+    1. Directly compare the current aggregation attempt to the ground truth. Scoring is not necessary if the solution is correct, however if it is incorrect we will have no information on the number of mistakes.
+
+    2. Score node 5 to check if the aggregation was successful. If the sorted list in node 5 matches the ground truth, the score will be 0, and we can then call the groundtruth action to finish the problem.
+
+Next action: groundtruth
+Nodes: [5]
+
+Explanation: We are continuing the strategy outlined in step 1. Currently, the list in node 0 has been split into two sublists in nodes 1 and 2. Nodes 3 and 4 are sorted sublists derived from nodes 1 and 2, respectively. Their score is 0, meaning their sorting is correct. Node 5 is the result of aggregating nodes 3 and 4. We should compare the sorted list in node 5 with the ground truth to determine if the aggregation was successful. If the sorted list in node 5 matches the ground truth, we have successfully solved the problem. Otherwise, we may need to perform additional aggregation attempts until a correct solution is achieved.
+</example>""",
+
+    # Aggregation error, retry 10 times, periodically scoring
+    """<example>
+INPUT:
+Previous actions:
+
+Step 1: split
+Nodes: [0]
+Explanation: To solve this problem, we should decompose the full list into smaller sublists and sort them individually, since sorting smaller sublists is less likely to introduce errors. The strategy will be to decompose into two lists, sort them individually, then score each sorted sublist to identify whether any mistakes were introduced. Once we find successfully sorted sublists, we can start merging them to produce a solution to the final problem. 
+
+Step 2: sort
+Nodes: [1, 2]
+Explanation:  We are continuing the strategy outlined in step 1. Currently, the list in node 0 has been split into two sublists in nodes 1 and 2. The next step is to sort each of these sublists individually. We will start by attempting to sort each sublist once. Next, we will score each sorting attempt to identify any errors. If any errors are found, we may need to perform additional sorting attempts until a correct sorting is achieved.
+
+Step 3: score
+Nodes: [3, 4]
+Explanation:  We are continuing the strategy outlined in step 1. Currently, the list in node 0 has been split into two sublists in nodes 1 and 2. Nodes 3 and 4 are sorted sublists derived from nodes 1 and 2, but they haven't been scored yet. If any mistakes are found, we may need to perform additional sorting attempts until a correct sorting is achieved. Ultimately, after finding correctly sorted sublists, we can start merging them to produce a solution to the original problem.
+
+Step 4: aggregate
+Nodes: [3, 4]
+Explanation:  We are continuing the strategy outlined in step 1. Currently, the list in node 0 has been split into two sublists in nodes 1 and 2. Nodes 3 and 4 are correctly sorted sublists derived from nodes 1 and 2. We can now aggregate them to find the solution to sorting node 0. We will perform 10 aggregation attempts. Each aggregation attempt will be scored to identify any errors, and if any mistakes are found, we may need to perform additional aggregation attempts until a correct solution is achieved.
+
+Step 5: score
+Nodes: [3, 4]
+Explanation:  We are continuing the strategy outlined in step 1. Node 0 was split into nodes 1 and 2. Nodes 3 and 4 are correctly sorted sublists derived from nodes 1 and 2. They were aggregated in node 5, and we will now check if the aggregation was correct.
+
+Step 6: aggregate
+Nodes: [3, 4]
+Explanation: The aggregation of nodes 3 and 4 was not performed correctly and the error count is high, so we will perform another 10 attempts. We will score each attempt to identify any errors, and if any mistakes are found, we may need to attempt refining the best aggregation attempts.
+
+Step 7: aggregate
+Nodes: [3, 4]
+Explanation: As explained in step 6, we are reattempting the aggregation due to errors in node 5. We have so far performed 1/10 aggregation attempts.
+
+Step 8: aggregate
+Nodes: [3, 4]
+Explanation: As explained in step 6, we are reattempting the aggregation due to errors in node 5. We have so far performed 2/10 aggregation attempts.
+
+Step 9: aggregate
+Nodes: [3, 4]
+Explanation: As explained in step 6, we are reattempting the aggregation due to errors in node 5. We have so far performed 3/10 aggregation attempts.
+
+Step 10: aggregate
+Nodes: [3, 4]
+Explanation: As explained in step 6, we are reattempting the aggregation due to errors in node 5. We have so far performed 4/10 aggregation attempts.
+
+Step 11: score
+Nodes: [6, 7, 8, 9, 10]
+Explanation: As explained in step 4, we are reattempting the aggregation due to errors in node 5. We have so far performed 5/10 aggregation attempts. We'll score these attempts to check if any have been successful so far.
+
+Current graph:
+
+Nodes:
+0: {'thought': '[0, 0, 5, 9, 0, 7, 9, 9, 1, 2, 6, 1, 1, 9, 0, 1, 3, 5, 2, 3, 5, 6, 0, 2, 7, 4, 6, 2, 9, 7, 5, 9]'}
+1: {'thought': [0, 0, 5, 9, 0, 7, 9, 9, 1, 2, 6, 1, 1, 9, 0, 1], 'score': None}
+2: {'thought': [3, 5, 2, 3, 5, 6, 0, 2, 7, 4, 6, 2, 9, 7, 5, 9], 'score': None}
+3: {'thought': '[0, 0, 0, 0, 1, 1, 1, 1, 2, 5, 6, 7, 9, 9, 9, 9]', 'score': 0, 'original': [0, 0, 5, 9, 0, 7, 9, 9, 1, 2, 6, 1, 1, 9, 0, 1]}
+4: {'thought': '[0, 2, 2, 2, 3, 3, 4, 5, 5, 5, 6, 6, 7, 7, 9, 9]', 'score': 0, 'original': [3, 5, 2, 3, 5, 6, 0, 2, 7, 4, 6, 2, 9, 7, 5, 9]}
+5: {'thought': '[0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 5, 5, 5, 5, 6, 6, 6, 7, 7, 7, 9, 9, 9, 9]', 'score': 3}
+6: {'thought': '[0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 5, 5, 5, 5, 6, 6, 6, 7, 7, 7, 9, 9, 9, 9]', 'score': 4}
+7: {'thought': '[0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 5, 5, 5, 5, 6, 6, 6, 7, 7, 7, 9, 9, 9, 9]', 'score': 3}
+8: {'thought': '[0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 5, 5, 5, 5, 6, 6, 6, 7, 7, 7, 9, 9, 9, 9]', 'score': 3}
+9: {'thought': '[0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 5, 5, 5, 5, 6, 6, 6, 7, 7, 7, 9, 9, 9, 9]', 'score': 3}
+10: {'thought': '[0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 5, 5, 5, 5, 6, 6, 6, 7, 7, 7, 9, 9, 9, 9]', 'score': 3}
+
+Edges:
+(0, 1): {}
+(0, 2): {}
+(1, 3): {}
+(2, 4): {}
+(3, 5): {}
+(4, 5): {}
+(3, 6): {}
+(4, 6): {}
+(3, 7): {}
+(4, 7): {}
+(3, 8): {}
+(4, 8): {}
+(3, 9): {}
+(4, 9): {}
+(3, 10): {}
+(4, 10): {}
+
+OUTPUT:
+Analysis: 
+A. Action history: the initial strategy was to decompose the initial list into two smaller sublists, sort them individually, then merge them to produce a solution to the original problem. In step 1, the list was decomposed into two sublists. In step 2, the sublists were sorted. In step 3, the sorted sublists were scored, showing that both sublists were correctly sorted. In step 4, the correctly sorted sublists were aggregated. In step 5, the aggregation was scored, showing 3 mistakes. In steps 6 to 10, another 5 aggregation attempts were performed. In step 11, each attempt was scored. A further 5 aggregation attempts are pending.
+
+B. Graph state: the graph currently has 11 nodes and 16 edges. Node 0 has the initial problem. Nodes 1 and 2 represent sublists of the original list, obtained in step 1. Nodes 3 and 4 were obtained in step 2, and they represent attempted sortings of the sublists in nodes 1 and 2. Nodes 3 and 4 both have a score of 0, marked in step 3. Nodes 5, 6, 7, 8, 9, 10 are attempts at aggregating nodes 3 and 4. They all have aggregation errors.
+
+C. Strategy analysis: the current strategy is unsuccessful, as we have not yet found a correct aggregation of nodes 3 and 4. However, there are still 5 aggregation attempts pending, so we may find a correct solution in the next steps.
+
+D. Next action options
+    1. Keep the best aggregation attempt out of nodes 5 to 10 and delete the rest. This would then allow refining the best aggregation attempt.
+
+    2. Continue aggregating nodes 3 and 4, performing another 5 aggregation attempts. If no correct solution is found, switch to refining the best aggregation attempt.
+
+
+Next action: aggregate
+Nodes: [3, 4]
+Explanation: As explained in step 4, we are reattempting the aggregation due to errors in node 5. We have so far performed 5/10 aggregation attempts. None of them are successful yet, so we will continue performing aggregation attempts.
+</example>""",
+
+    # Sorting error, split further
+    """<example>
+INPUT:
+Previous actions:
+
+Step 1: split
+Nodes: [0]
+Explanation: To solve this problem, we should decompose node 0 into smaller sublists and sort them individually, since sorting smaller sublists is less likely to introduce errors. The strategy will be to decompose into two lists, sort them individually, then score each sorted sublist to identify whether any mistakes were introduced. Once we find successfully sorted sublists, we can start merging them to find the sorted version of node 0. 
+
+Step 2: sort
+Nodes: [1, 2]
+Explanation: We are continuing the strategy outlined in step 1. Currently, the list in node 0 has been split into two sublists in nodes 1 and 2. The next step is to sort each of these sublists individually. We will start by attempting to sort each sublist once. Next, we will score each sorting attempt to identify any errors. If any errors are found, we may need to perform additional sorting attempts until a correct sorting is achieved.
+
+Step 3: score
+Nodes: [3, 4]
+Explanation: We are continuing the strategy outlined in step 1. Nodes 3 and 4 are sorted versions of nodes 1 and 2, which are sublists of node 0. The nodes are marked with a score of None, so the next step is to check if the sublists were correctly sorted. If any mistakes are found, we may need to perform additional sorting attempts until a correct sorting is achieved. Otherwise, we can merge nodes 3 and 4 to find the sorted version of node 0.
+
+Step 4: split
+Nodes: [2]
+Explanation: We have found a mistake, so we are adapting the current strategy. The sublist in node 2 was incorrectly sorted, as indicated by the score of 1. To correct this mistake, we will decompose the problem further by splitting the sublist in node 2 into two smaller sublists. We will leave the sublist in node 1 as it is already correctly sorted in node 3. Once the new sublists are correctly sorted, we can merge them to correct the error in node 4. Then, we can continue with the strategy of merging the sorted sublists to produce a solution to the original problem.
+
+Step 5: sort
+Nodes: [5, 6]
+Explanation: We are continuing with the new strategy outlined in step 4. We split the sublist in node 2 into two smaller sublists in nodes 5 and 6, since sublist 2 was incorrectly sorted in node 4. The next step is to sort each of these sublists individually. We will start by attempting to sort each sublist once. Next, we will score each sorting attempt to identify any errors. If any errors are found, we may need to perform additional sorting attempts until a correct sorting is achieved.
+
+Current graph:
+
+Nodes:
+0: {'thought': '[0, 0, 5, 9, 0, 7, 9, 9, 1, 2, 6, 1, 1, 9, 0, 1, 3, 5, 2, 3, 5, 6, 0, 2, 7, 4, 6, 2, 9, 7, 5, 9]'}
+1: {'thought': [0, 0, 5, 9, 0, 7, 9, 9, 1, 2, 6, 1, 1, 9, 0, 1], 'score': None}
+2: {'thought': [3, 5, 2, 3, 5, 6, 0, 2, 7, 4, 6, 2, 9, 7, 5, 9], 'score': None}
+3: {'thought': '[0, 0, 0, 0, 1, 1, 1, 1, 2, 5, 6, 7, 9, 9, 9, 9]', 'score': 0, 'original': [0, 0, 5, 9, 0, 7, 9, 9, 1, 2, 6, 1, 1, 9, 0, 1]}
+4: {'thought': '[0, 2, 2, 2, 3, 3, 4, 5, 5, 5, 6, 6, 7, 7, 9]', 'score': 1, 'original': [3, 5, 2, 3, 5, 6, 0, 2, 7, 4, 6, 2, 9, 7, 5, 9]}
+5: {'thought': [3, 5, 2, 3, 5, 6, 0, 2], 'score': None}
+6: {'thought': [7, 4, 6, 2, 9, 7, 5, 9], 'score': None}
+
+Edges:
+(0, 1): {}
+(0, 2): {}
+(1, 3): {}
+(2, 4): {}
+(2, 5): {}
+(2, 6): {}
+
+OUTPUT:
+Analysis: 
+A. Action history:
+The starting strategy was to decompose node 0 into two smaller sublists, sort them individually, then merge them to produce a solution to the original problem. In step 1, the list was decomposed into two sublists. In step 2, the sublists were sorted. In step 3, the sorted sublists were scored, showing there was a mistake in node 4. Therefore the strategy was changed to decompose node 2 further into smaller sublists and sort them individually before merging to correct the mistake in node 4. Node 2 was split in step 4, and the new sorting attempt was made in step 5.
+
+B. Graph state:
+The graph currently has 7 nodes and 6 edges. Node 0 has the initial problem. Nodes 1 and 2 represent sublists of the original list, obtained in step 1. Nodes 3 and 4 were obtained in step 2, and they represent attempted sortings of the sublists in nodes 1 and 2. Node 3 has a score of 0, marked in step 3. Node 4 has a score of 1, marked in step 3. Nodes 5 and 6 are the new sublists obtained by splitting node 2 in step 4. 
+
+C. Strategy analysis:
+The current strategy is pending, as we need to identify whether the new sorting attempts in nodes 5 and 6 are successful.
+
+D. Next action options:
+    1. Score nodes 5 and 6 to check if the new sorting attempts were successful. If the sorting is correct, we can proceed with aggregating the sublists to produce a corrected version of node 4. If any mistakes are found, we may need to perform additional sorting attempts until a correct sorting is achieved.
+
+    2. Merge the sorted sublists in nodes 5 and 6 to produce a corrected version of node 4. If the sorting is correct, we can proceed with aggregating the sublists to produce a corrected version of node 4. However, the merging will likely be incorrect if either of the sorted sublists have errors in them.
+
+Next action: score
+Nodes: [5, 6]
+
+Explanation: We are continuing with the new strategy outlined in step 4. We split the sublist in node 2 into two smaller sublists in nodes 5 and 6, since sublist 2 was incorrectly sorted in node 4. The new sublists were sorted, and we need to score them to check if the sorting was successful. If the sorting is correct, we can proceed with aggregating the sublists to produce a corrected version of node 4. If any mistakes are found, we may need to perform additional sorting attempts until a correct sorting is achieved. Otherwise, we can continue with the strategy of merging the sorted sublists to produce a sorted version of node 0.
+</example>""",
+
+    # Refine sorting
+    """<example>
+INPUT:
+Previous actions:
+
+Step 1: split
+Nodes: [0]
+Explanation: To solve this problem, we should decompose the full list into smaller sublists and sort them individually, since sorting smaller sublists is less likely to introduce errors. The strategy will be to decompose into two lists, sort them individually, then score each sorted sublist to identify whether any mistakes were introduced. Once we find successfully sorted sublists, we can start merging them to produce a solution to the final problem. 
+
+Step 2: sort
+Nodes: [1, 2]
+Explanation:  We are continuing the strategy outlined in step 1. Currently, the list in node 0 has been split into two sublists in nodes 1 and 2. The next step is to sort each of these sublists individually. We will start by attempting to sort each sublist once. Next, we will score each sorting attempt to identify any errors. If any errors are found, we may need to perform additional sorting attempts until a correct sorting is achieved.
+
+Step 3: score
+Nodes: [3, 4]
+Explanation:  We are continuing the strategy outlined in step 1. Currently, the list in node 0 has been split into two sublists in nodes 1 and 2. Nodes 3 and 4 are sorted sublists derived from nodes 1 and 2, but they haven't been scored yet. If any mistakes are found, we may need to perform additional sorting attempts until a correct sorting is achieved. Ultimately, after finding correctly sorted sublists, we can start merging them to produce a solution to the original problem.
+
+Step 4: aggregate
+Nodes: [3, 4]
+Explanation:  We are continuing the strategy outlined in step 1. Currently, the list in node 0 has been split into two sublists in nodes 1 and 2. Nodes 3 and 4 are correctly sorted sublists derived from nodes 1 and 2. We can now aggregate them to find the solution to sorting node 0. We will perform 10 aggregation attempts. Each aggregation attempt will be scored to identify any errors, and if any mistakes are found, we may need to perform additional aggregation attempts until a correct solution is achieved.
+
+Step 5: score
+Nodes: [3, 4]
+Explanation:  We are continuing the strategy outlined in step 1. Node 0 was split into nodes 1 and 2. Nodes 3 and 4 are correctly sorted sublists derived from nodes 1 and 2. They were aggregated in node 5, and we will now check if the aggregation was correct.
+
+Nodes:
+0: {'thought': '[0, 0, 5, 9, 0, 7, 9, 9, 1, 2, 6, 1, 1, 9, 0, 1, 3, 5, 2, 3, 5, 6, 0, 2, 7, 4, 6, 2, 9, 7, 5, 9]'}
+1: {'thought': [0, 0, 5, 9, 0, 7, 9, 9, 1, 2, 6, 1, 1, 9, 0, 1], 'score': None}
+2: {'thought': [3, 5, 2, 3, 5, 6, 0, 2, 7, 4, 6, 2, 9, 7, 5, 9], 'score': None}
+3: {'thought': '[0, 0, 0, 0, 1, 1, 1, 1, 2, 5, 6, 7, 9, 9, 9, 9]', 'score': 0, 'original': [0, 0, 5, 9, 0, 7, 9, 9, 1, 2, 6, 1, 1, 9, 0, 1]}
+4: {'thought': '[0, 2, 2, 2, 3, 3, 4, 5, 5, 5, 6, 6, 7, 7, 9, 9]', 'score': 0, 'original': [3, 5, 2, 3, 5, 6, 0, 2, 7, 4, 6, 2, 9, 7, 5, 9]}
+5: {'thought': '[0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 5, 5, 5, 5, 6, 6, 6, 7, 7, 7, 9, 9, 9, 9]', 'score': 1}
+
+Edges:
+(0, 1): {}
+(0, 2): {}
+(1, 3): {}
+(2, 4): {}
+(3, 5): {}
+(4, 5): {}
+
+OUTPUT:
+Analysis: 
+A. Action history: the initial strategy was to decompose the initial list into two smaller sublists, sort them individually, then merge them to produce a solution to the original problem. In step 1, the list was decomposed into two sublists. In step 2, the sublists were sorted. In step 3, the sorted sublists were scored, showing that both sublists were correctly sorted. In step 4, the correctly sorted sublists were aggregated. In step 5, the aggregation was scored, showing 1 mistake. 
+
+B. Graph state: the graph currently has 6 nodes and 6 edges. Node 0 has the initial problem. Nodes 1 and 2 represent sublists of the original list, obtained in step 1. Nodes 3 and 4 were obtained in step 2, and they represent attempted sortings of the sublists in nodes 1 and 2. Node 5 is an attempted aggregation of nodes 3 and 4.
+
+C. Strategy analysis: the current strategy is unsuccessful, as the aggregation of nodes 3 and 4 failed. However, there is only 1 mistake, so the aggregation is close to being correct.
+
+D. Next action options
+    1. Continue attempting to aggregate nodes 3 and 4.
+
+    2. Refine node 5 to correct any mistakes. This may be sufficient if the error count is low.
+
+Next action: refine
+Nodes: [5, 5, 5, 5, 5]
+Explanation: We are continuing the strategy outlined in step 1. Node 0 was split into nodes 1 and 2. Nodes 3 and 4 are correctly sorted sublists derived from nodes 1 and 2. They were aggregated in node 5, but there was 1 mistake. We will refine node 5 to correct the mistake. We will perform 10 refinement attempts. Each refinement attempt will be scored to identify any errors, and if any mistakes are found, we may need to perform additional refinement attempts until a correct solution is achieved.
+
+""",
+]
+
+examples = "\n".join(example_list)
 
 # Implementation
 
@@ -33,8 +382,8 @@ Only output the final 2 lists in the following format without any additional tex
 Input: [9, 6, 7, 7, 2, 0, 2, 2, 3, 5, 0, 9, 2, 2, 4, 4, 5, 2, 5, 1, 2, 8, 3, 8, 3, 9, 6, 0, 4, 2, 2, 3]
 Output: 
 {{
-    List 1: [9, 6, 7, 7, 2, 0, 2, 2, 3, 5, 0, 9, 2, 2, 4, 4],
-    List 2: [5, 2, 5, 1, 2, 8, 3, 8, 3, 9, 6, 0, 4, 2, 2, 3]
+    "List 1": [9, 6, 7, 7, 2, 0, 2, 2, 3, 5, 0, 9, 2, 2, 4, 4],
+    "List 2": [5, 2, 5, 1, 2, 8, 3, 8, 3, 9, 6, 0, 4, 2, 2, 3]
 }}
 </Example>
 
@@ -144,19 +493,11 @@ def split(
         as_dict = ast.literal_eval(out[0].replace("\n", ""))
 
         # 2. Update the graph
-        for i in range(num_elems // 32):
+        for k, v in as_dict.items():
             idx = max(list(graph.nodes)) + 1
             graph.add_node(
                 idx, 
-                thought=as_dict[f"List {2*i + 1}"], 
-                score=None
-            )
-            graph.add_edge(node_idx, idx)
-
-            idx = max(list(graph.nodes)) + 1
-            graph.add_node(
-                idx, 
-                thought=as_dict[f"List {2*i + 2}"], 
+                thought=v, 
                 score=None
             )
             graph.add_edge(node_idx, idx)
@@ -348,13 +689,18 @@ def aggregate(
     )
     
     # 2. Update the graph
-    combined_list = str(
-        ast.literal_eval(
-            graph.nodes[int(nodes[0])]["thought"]
-        ) + ast.literal_eval(
-            graph.nodes[int(nodes[1])]["thought"]
-        )
-    )
+    if isinstance(graph.nodes[int(nodes[0])]["thought"], list):
+        node1 = graph.nodes[int(nodes[0])]["thought"]
+    else:
+        node1 = ast.literal_eval(graph.nodes[int(nodes[0])]["thought"])
+
+    if isinstance(graph.nodes[int(nodes[1])]["thought"], list):
+        node2 = graph.nodes[int(nodes[1])]["thought"]
+    else:
+        node2 = ast.literal_eval(graph.nodes[int(nodes[1])]["thought"])
+
+
+    combined_list = str(node1 + node2)
     idx = max(list(graph.nodes)) + 1
     graph.add_node(
         idx, 
