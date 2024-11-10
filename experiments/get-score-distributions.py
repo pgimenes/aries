@@ -1,21 +1,26 @@
 import re
 import numpy
 
-task = "set-intersection64"
+task = "keyword-counting"
 method = "got"
-final_step = 61
+final_step = [362, 312, 387, 437, 337, 312, 287]
+model = "llama-3.1-70b/"
+
+# 362, 312, 387, 437, 337, 312, 287, 
 
 def extract_scores(log_content):
     # Regular expression to find 'score' followed by any number
 
-    if method in ["tot", "got"]:
-        score_pattern = fr"{final_step}:.*'score':\s*(\d+)"
-    else:
-        score_pattern = r"'score':\s*(\d+)"
-    
-    # Find all matches and convert them to integers
-    scores = [int(match) for match in re.findall(score_pattern, log_content)]
-    
+    scores = []
+    for num in final_step:
+        if method in ["tot", "got"]:
+            score_pattern = fr"{num}:.*'score':\s*(\d+)"
+        else:
+            score_pattern = r"'score':\s*(\d+)"
+        
+        # Find all matches and convert them to integers
+        scores += [int(match) for match in re.findall(score_pattern, log_content)]
+
     return scores
 
 # Load your log content from a file (e.g., "log.txt")
