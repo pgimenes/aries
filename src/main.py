@@ -64,6 +64,7 @@ def get_agent(agent, env, task, **kwargs):
             model = "gpt-4",
             problem_definition = task.problem_definition,
             actions = task.actions,
+            max_iterations = kwargs.get("max_iterations", 25),
         )
 
 def run(args, data):
@@ -143,8 +144,10 @@ def run(args, data):
             # Run agent on environment
             done = False
             itr = 0    
+            attempts = 1
+            
             while not done:
-                if itr >= agent.max_iterations:
+                if itr >= agent.max_iterations or attempts > 5:
                     break
 
                 action = agent.get_action(obs)
@@ -154,9 +157,11 @@ def run(args, data):
                     agent.action_history.append(action)
                     done = terminated or truncated
                     itr += 1
-                except:
-                    print(f"Action failed, trying again. Action: {action}")
-
+                    attempts = 1
+                except Exception as exc:
+                    attempts += 1
+                    print(f"[{attempts}/5] Action {action['operation']} failed on nodes {action['nodes']}, trying again. Error: {exc}")
+                    
             if done:
                 print(f"Result: success")
                 successes.append(problem)
@@ -201,6 +206,13 @@ def argparser():
         "--end", 
         type=int, 
         default=100,
+    )
+
+    # LLM Agent
+    parser.add_argument(
+        "--max_iterations",
+        type=int,
+        default=25,
     )
 
     # GoT Agent

@@ -457,12 +457,9 @@ def groundtruth(
         node_idx = int(node)
         graph_node = graph.nodes[node_idx]
         
-        # Parse the expression
-        country_list = get_country_list(original)
-        
         matches = True
-        real_count = get_ground_truth(original, country_list)
-        for country in country_list:
+        real_count = get_ground_truth(original)
+        for country in COUNTRIES:
             err = abs(
                 real_count.get(
                     country,

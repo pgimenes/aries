@@ -177,6 +177,7 @@ class LLMAgent:
         model: str,
         problem_definition: str,
         actions: dict[str, str],
+        max_iterations: int = None,
     ):
         self.env = env
         self.task = task
@@ -186,7 +187,7 @@ class LLMAgent:
         self.actions = actions
         self.task_examples = getattr(task, "examples")
 
-        self.max_iterations = 25
+        self.max_iterations = max_iterations if max_iterations is not None else 25
 
         self.action_history = []
 
