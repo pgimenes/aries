@@ -216,8 +216,6 @@ The following actions are available:
 
 {actions}</Instruction>
 
-Your output should be in the format matching these examples:
-
 {examples}
 
 INPUT:
@@ -272,9 +270,6 @@ OUTPUT:"""
                     res[0],
                     re.DOTALL
                 )
-
-                if match is None and attempts == 5:
-                    breakpoint()
 
                 analysis = match.group(1)
                 operation = match.group(2)

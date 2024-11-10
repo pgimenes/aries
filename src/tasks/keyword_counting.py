@@ -320,25 +320,28 @@ def refine(
         node_idx = int(node)
         graph_node = graph.nodes[node_idx]
 
-        out = llm(
-            refine_prompt.format(
-                input=graph.nodes[int(node)]["original"], 
-                incorrect_dict=graph.nodes[int(node)]["thought"], 
-            ),
-            model=model,
-        )
+        # Skip refining nodes that are already correct
+        if graph_node.get("score", None) is not None and graph_node["score"] == 0:
+            output = graph_node["thought"]
+        else:
+            out = llm(
+                refine_prompt.format(
+                    input=graph.nodes[int(node)]["original"], 
+                    incorrect_dict=graph.nodes[int(node)]["thought"], 
+                ),
+                model=model,
+            )
 
-
-        try:
-            output = out[0].split("{")[1].split("}")[0]
-            as_dict = ast.literal_eval("{" + output + "}")
-        except:
-            as_dict = graph_node["thought"]
+            try:
+                output = out[0].split("{")[1].split("}")[0]
+                output = ast.literal_eval("{" + output + "}")
+            except:
+                output = graph_node["thought"]
         
         idx = max(list(graph.nodes)) + 1
         graph.add_node(
             idx,
-            thought=as_dict,
+            thought=output,
             original=graph.nodes[node_idx]["original"],
         )
         graph.add_edge(node_idx, idx)
@@ -355,7 +358,7 @@ def get_country_list(text):
             clist = clist.split("[")[1].split("]")[0].split(", ")
             return clist
         
-def get_ground_truth(text, country_list):
+def get_ground_truth(text):
     count = {}
     for country in COUNTRIES:
         cnt = text.count(country)
@@ -370,27 +373,30 @@ def score(
     for node in nodes:
         graph_node = graph.nodes[int(node)]
         
+        # Skip scoring if already scored
         if "score" in graph_node.keys() and graph_node["score"] is not None:
             continue
         
-        original = graph_node["original"]
-        
-        country_list = get_country_list(original)
-        
-        real_count = get_ground_truth(original, country_list)
-        error = 0
+        try:
+            original = graph_node["original"]
+            real_count = get_ground_truth(original)
+            error = 0
 
-        for country in COUNTRIES:
-            err = abs(
-                real_count.get(
-                    country,
-                    0,
-                ) - graph.nodes[int(node)]["thought"].get(
-                    country, 
-                    0,
+            for country in COUNTRIES:
+                err = abs(
+                    real_count.get(
+                        country,
+                        0,
+                    ) - graph.nodes[int(node)]["thought"].get(
+                        country, 
+                        0,
+                    )
                 )
-            )
-            error += err
+                error += err
+        
+        # Assign a large error if scoring fails
+        except:
+            errors = 1000000
 
         graph_node["score"] = error
             

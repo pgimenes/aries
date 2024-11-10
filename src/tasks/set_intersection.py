@@ -274,14 +274,27 @@ def score(
         graph_node = graph.nodes[node_idx]
         thought = graph_node["thought"]
 
+        # Skip scoring if already scored
         if "score" in graph_node.keys() and graph_node["score"] is not None:
             continue
 
         errors = 0
         try:
+            # Extract set 1
+            if isinstance(graph_node["set1"], list):
+                set1 = graph_node["set1"]
+            else:
+                set1 = ast.literal_eval(graph_node["set1"])
+            set1 = set(set1)
+
+            # Extract set 2
+            if isinstance(graph_node["set2"], list):
+                set2 = graph_node["set2"]
+            else:
+                set2 = ast.literal_eval(graph_node["set2"])
+            set2 = set(set2)
+            
             # Parse the expression
-            set1 = set(ast.literal_eval(graph_node["set1"]))
-            set2 = set(ast.literal_eval(graph_node["set2"]))
             intersection = list(set1.intersection(set2))
             intersection.sort()
 
@@ -360,19 +373,23 @@ def refine(
     for node in nodes:
         node_idx = int(node)
 
-        out = llm(
-            refine_prompt.format(
-                set1=graph.nodes[int(node)]["set1"],
-                set2=graph.nodes[int(node)]["set2"],
-                incorrect_intersection=graph.nodes[int(node)]["thought"],
-            ), model=model)[0]
-
-        # Extract steps and answer
-        try:
-            output = out.split("Output: ")[1]
-            output = ast.literal_eval(output)
-        except:
+        # Skip refining nodes that are already correct
+        if graph.nodes[int(node)].get("score", None) is not None and graph.nodes[int(node)]["score"] == 0:
             output = graph.nodes[int(node)]["thought"]
+        else:
+            out = llm(
+                refine_prompt.format(
+                    set1=graph.nodes[int(node)]["set1"],
+                    set2=graph.nodes[int(node)]["set2"],
+                    incorrect_intersection=graph.nodes[int(node)]["thought"],
+                ), model=model)[0]
+
+            # Extract steps and answer
+            try:
+                output = out.split("Output: ")[1]
+                output = ast.literal_eval(output)
+            except:
+                output = graph.nodes[int(node)]["thought"]
 
         idx = max(list(graph.nodes)) + 1
         graph.add_node(
@@ -410,16 +427,32 @@ def aggregate(
     
     # 2. Update the graph
     idx = max(list(graph.nodes)) + 1
+
+    # Find combined score
     if graph.nodes[int(nodes[0])].get("score", None) is None or graph.nodes[int(nodes[1])].get("score", None) is None:
-        newscore = None,
+        newscore = None
     else:
         newscore = graph.nodes[int(nodes[0])]["score"] + graph.nodes[int(nodes[1])]["score"]
         
+    # Find combined set 2 (set 1 should be the same in both nodes)
+    if isinstance(graph.nodes[int(nodes[0])]["set2"], list):
+        set2_1 = graph.nodes[int(nodes[0])]["set2"]
+    else: 
+        set2_1 = ast.literal_eval(graph.nodes[int(nodes[0])]["set2"])
+
+    if isinstance(graph.nodes[int(nodes[1])]["set2"], list):
+        set2_2 = graph.nodes[int(nodes[1])]["set2"]
+    else:
+        set2_2 = ast.literal_eval(graph.nodes[int(nodes[1])]["set2"])
+
+    combined_set2 = str(set2_1 + set2_2)
+
     graph.add_node(
         idx, 
         thought=out[0],
         score=newscore,
-        original = None,
+        set1=graph.nodes[int(nodes[0])]["set1"],
+        set2=combined_set2,
     )
 
     for node in nodes:

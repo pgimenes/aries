@@ -545,19 +545,22 @@ def refine(
         node_idx = int(node)
         graph_node = graph.nodes[node_idx]
         
-        original = graph_node["original"]
-        sorted = graph_node["thought"]
+        # Skip if the node is already correct
+        if graph_node.get("score", None) is not None and graph_node["score"] == 0:
+            output = graph_node["thought"]
 
-        prompt = refine_prompt.format(
-            input=original,
-            incorrectly_sorted=sorted
-        )
+        else:
+            original = graph_node["original"]
 
-        out = llm(prompt, model=model)
+            prompt = refine_prompt.format(
+                input=original,
+                incorrectly_sorted=graph_node["thought"]
+            )
 
-        # Find reason and output
-        output = out[0].split("Output: ")[-1]
-        # output = [original]
+            out = llm(prompt, model=model)
+
+            # Find reason and output
+            output = out[0].split("Output: ")[-1]
 
         # Update the graph
         idx = max(list(graph.nodes)) + 1
@@ -581,6 +584,10 @@ def score(
     for node in nodes:
         node_idx = int(node)
         graph_node = graph.nodes[node_idx]
+
+        # Skip scoring if already scored
+        if "score" in graph_node.keys() and graph_node["score"] is not None:
+            continue
         
         # Extract thought
         try:
@@ -613,6 +620,7 @@ def score(
                 diff = abs(real_freq_dict[i] - thought_freq_dict[i])
                 errors += diff
         
+        # Assign a large error if scoring fails
         except:
             errors = 1000000
 
