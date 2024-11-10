@@ -45,7 +45,7 @@ def completions_with_backoff(**kwargs):
 def llm(
     prompt,
     model="gpt-4", 
-    temperature=0.7, 
+    temperature=1, 
     max_tokens=1000, 
     n=1, 
     stop=None, 

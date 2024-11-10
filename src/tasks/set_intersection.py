@@ -11,14 +11,75 @@ model = "gpt-4"
 problem_definition = "Find the intersection of two sets of numbers."
 
 actions = {
-    "split": "Split a list into two to decompose the problem. This creates two new nodes connected to the original node.",
-    "intersect": "Find the intersection of two subsets. This creates a new node with the intersection, connected to the original node.",
-    "score": "Count the number of mistakes in the current set intersection and mark the node with the number of mistakes. This action doesn't create any new nodes.",
-    "refine": "Refine an intersection by fixing any existing mistakes. This action should only be called on nodes that have already been scored and contain mistakes (i.e. non-zero scores). This creates a new node connected to the original node.",
-    "keepbest": "Out of the selected nodes, keep the one with the highest score, and delete the rest. This action should only be called on nodes that have already been scored.",
-    "aggregate": "Merge the intersected subsets of the selected nodes into a single set intersection. You can only aggregate two nodes at a time. This action creates a new node connected to the two selected nodes.",
-    "groundtruth": "Compare the sorted list in a node with the ground truth. When a node doesn't match the ground truth, it will be marked with 'matches_ground_truth: False'."
+    "split": {
+        "description": "Split a list into two to decompose the problem.",
+        "preconditions": "",
+        "effects": "Two new nodes are created, connected to the original node.",
+    },
+    "intersect": {
+        "description": "Find the intersection of two subsets.",
+        "preconditions": "",
+        "effects": "A new node with the intersection is created, connected to the original node.",
+    },
+    "aggregate": {
+        "description": "Merge the intersected subsets of the selected nodes into a single set intersection.",
+        "preconditions": "Only two nodes should be selected.",
+        "effects": "A new node is created, connected to the two selected nodes.",
+    },
+    "refine": {
+        "description": "Refine an intersection by fixing any existing mistakes.",
+        "preconditions": "The node should have a non-zero score.",
+        "effects": "A new node is created, connected to the original node.",
+    },
+    "score": {
+        "description": "Count the number of mistakes in the node.",
+        "preconditions": "",
+        "effects": "The error count is annotated in the metadata of each node, and no new nodes are created.",
+    },
+    "keepbest": {
+        "description": "Out of the selected nodes, keep the one with the highest score, and delete the rest.",
+        "preconditions": "The selected nodes must have been scored.",
+        "effects": "All selected nodes are deleted, but the one with the highest score is duplicated as a new node.",
+    },
+    "groundtruth": {
+        "description": "Compare the sorted list in a node with the ground truth.",
+        "preconditions": "",
+        "effects": "The node is annotated with 'matches_ground_truth: True' or 'False'.",
+    }
 }
+
+examples = [
+    """<example>
+INPUT:
+Previous actions:
+
+Current graph:
+
+Nodes:
+0: {'set1': "[11, 60, 1, 49, 21, 33, 14, 56, 54, 15, 23, 40, 45, 22, 7, 28, 20, 46, 51, 6, 34, 37, 3, 50, 17, 8, 25, 0, 35, 47, 18, 19]", "set2": "[31, 11, 4, 63, 38, 58, 59, 24, 61, 14, 32, 39, 27, 46, 48, 19, 52, 57, 50, 56, 3, 2, 53, 29, 5, 37, 62, 41, 36, 12, 49, 16]"}
+
+Edges:
+
+OUTPUT:
+Analysis: 
+
+A. Action history: No actions have been taken yet. 
+
+B. Graph state: The graph currently has 1 node and 0 edges. Node 0 contains the initial problem. 
+
+C. Strategy analysis: The strategy for solving the problem has not been determined yet.
+
+D. Next action options
+    1. Attempt to intersect the sets directly. This may be effective if the sets are small and the intersection is simple.
+
+    2. Decompose the sets by splitting them into smaller sets. This may be necessary if the sets are too large to intersect directly.
+
+Next action: split
+Nodes: [0]
+
+Explanation: The sets are too large to intersect directly, so we need to split them into smaller sets first.
+</example>""",
+]
 
 # Implementation
 
@@ -95,6 +156,25 @@ Output:
 Input: {input}
 Output: """
 
+splitx = """<Instruction> Split the following list of numbers into 2 lists. The first list should contain the first half of the numbers and the second list should contain the second half.
+Only output the 2 lists in the following format without any additional text or thoughts!:
+{{
+    "List 1": [13, 16, 30, 6, 21, 7, 31, ...],
+    "List 2": [25, 24, 10, 4, 27, 0, 14, ...]
+}} </Instruction>
+
+<Example>
+Input: [26, 40, 42, 57, 15, 31, 5, 32, 11, 4, 24, 28, 51, 54, 12, 22, 33, 35, 7, 13, 2, 59, 8, 23, 43, 16, 29, 55, 25, 63, 21, 18]
+Output:
+{{
+    "List 1": [26, 40, 42, 57, 15, 31, 5, 32, 11, 4, 24, 28, 51, 54, 12, 22],
+    "List 2": [33, 35, 7, 13, 2, 59, 8, 23, 43, 16, 29, 55, 25, 63, 21, 18]
+}}
+</Example>
+
+Input: {input}
+Output: """
+
 def split(
     graph, 
     nodes,
@@ -112,7 +192,7 @@ def split(
         elif num_elems == 128:
             prompt = split_prompt128
         else:
-            raise ValueError("Invalid number of elements")
+            prompt = splitx
         
         out = llm(
             prompt.format(
@@ -372,7 +452,10 @@ def groundtruth(
         thought.sort()
 
         if intersection == thought:
+            graph_node["matches_ground_truth"] = True
             any_match = True
+        else:
+            graph_node["matches_ground_truth"] = False
 
     return graph, any_match
 

@@ -76,6 +76,9 @@ def run(args, data):
         iterator = data
 
     for idx, problem in enumerate(iterator):
+        if idx < args.start or idx > args.end:
+            continue
+
         print(f"===============================")
         print(f"Solving problem {idx}/{len(data)}")
         print(f"===============================")
@@ -256,7 +259,5 @@ if __name__ == "__main__":
     else:
         with open(f"data/{args.task}.csv") as f:
             data = pd.read_csv(f)
-
-    data = data[args.start:args.end]
 
     run(args, data)

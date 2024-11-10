@@ -79,6 +79,7 @@ tmux new-session -d -s keyword-counting-got "conda deactivate; conda activate sg
                                 --got_aggregate_attempts 3 \
                                 --got_refine_attempts 3 \
                                 &> experiments/logs/llama-3.1-405b/keyword-counting-got.log"
+tmux new-session -d -s keyword-counting-llm "conda deactivate; conda activate sglang; cd reasoning-agent; python -u src/main.py --task keyword_counting --agent llm &> experiments/logs/llama-3.1-405b/keyword-counting-llm.log"
 
 # set_intersection32
 tmux new-session -d -s set-intersection32-io "conda deactivate; conda activate sglang; cd reasoning-agent; python -u src/main.py --task set_intersection32 --agent io &> experiments/logs/llama-3.1-405b/set-intersection32-io.log"

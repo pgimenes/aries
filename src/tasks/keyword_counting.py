@@ -14,14 +14,75 @@ model = "gpt-4"
 problem_definition = "Count the frequency of how many times each country is explicitly named in the input text."
 
 actions = {
-    "split": "Split the input text into individual sentences to decompose the problem. This creates new nodes connected to the original node.",
-    "count": "Count the frequency of each country that appears at least once in the input text. This creates a new node connected to the original node.",
-    "score": "Count the number of mistakes in the frequency of each country in the input text and mark the node with the number of mistakes. This action doesn't create any new nodes.",
-    "refine": "Refine a count by fixing any existing mistakes. This action should only be called on nodes that have already been scored and contain mistakes (i.e. non-zero scores). This creates a new node connected to the original node.",
-    "keepbest": "Out of the selected nodes, keep the one with the highest score, and delete the rest. This action should only be called on nodes that have already been scored.",
-    "aggregate": "Merge the frequency counts of the selected nodes into a single count. You can only aggregate two nodes at a time. This action creates a new node connected to the two selected nodes.",
-    "groundtruth": "Compare the country count in a node with the ground truth. When a node doesn't match the ground truth, it will be marked with 'matches_ground_truth: False'.",
+    "split": {
+        "description": "Split the input text into individual sentences to decompose the problem. ",
+        "preconditions": "",
+        "effects": "This creates new nodes connected to the original node.",
+    },
+    "count": {
+        "description": "Count the frequency of each country that appears at least once in the input text.",
+        "preconditions": "",
+        "effects": "This creates a new node connected to the original node.",
+    },
+    "aggregate": {
+        "description": "Merge the frequency counts of the selected nodes into a single count.  ",
+        "preconditions": "You can only aggregate two nodes at a time.",
+        "effects": "This action creates a new node connected to the two selected nodes.",
+    },
+    "refine": {
+        "description": "Refine a count by fixing any existing mistakes.",
+        "preconditions": "This action should only be called on nodes that have already been scored and contain mistakes (i.e. non-zero scores).",
+        "effects": "This creates a new node connected to the original node.",
+    },
+    "score": {
+        "description": "Count the number of mistakes in the node.",
+        "preconditions": "",
+        "effects": "The error count is annotated in the metadata of each node, and no new nodes are created.",
+    },
+    "keepbest": {
+        "description": "Out of the selected nodes, keep the one with the highest score, and delete the rest.",
+        "preconditions": "The selected nodes must have been scored.",
+        "effects": "All selected nodes are deleted, but the one with the highest score is duplicated as a new node.",
+    },
+    "groundtruth": {
+        "description": "Compare the sorted list in a node with the ground truth.",
+        "preconditions": "",
+        "effects": "The node is annotated with 'matches_ground_truth: True' or 'False'.",
+    }
 }
+
+examples = [
+    """<example>
+INPUT:
+Previous actions:
+
+Current graph:
+
+Nodes:
+0: {'thought': "One evening, Sarah, an archaeologist from Norway made a surprising discovery about ancient trade routes between Sweden and Norway. As per her research, the artifacts that were found in Norway were identical to those in Sweden, indicating a deep-rooted cultural connection between Sweden and Norway. This piqued the interest of her colleague, James, who was from Canada. He had been researching the indigenous tribes of Canada and found many similarities with tribes from his neighboring country, the United States. James had always been interested in the historical ties between Canada and United States, and his study further confirmed the age-old connections between the two countries. Upon hearing James's story, Sarah shared a fascinating anecdote from her travels in Portugal. She recalled how locals loved to tell the tale of the shared history between Spain and Portugal. Her anecdotes about Spain and Portugal echoed the same sense of shared culture and past, just like in the case of Norway and Sweden, and Canada and United States. Their conversation reminded James of his stay in South Korea, where he had learned about the close relationship between North Korea and South Korea, despite their current political divide. He recalled stories about the shared history of North Korea and South Korea, whose deep-seated cultural ties transcended political boundaries. Sarah, who had been to Australia, reciprocated with her own experiences of the bond between Australia and New Zealand. She described how, despite geographical separation, Australia and New Zealand shared a unique camaraderie and close historical ties. As they exchanged stories, their conversation moved to South Africa and its various connections with its neighbouring country, Zimbabwe. Sarah shared stories she had heard about the intricate bond between South Africa and Zimbabwe, showcasing the age-old interactions between these two nations. It left them both reflecting on the timeless bonds that connect nations across the world, from Norway to Australia, Canada to Zimbabwe, and all the countries in between.",
+
+Edges:
+
+OUTPUT:
+Analysis: 
+
+A. Action history: No actions have been taken yet. 
+
+B. Graph state: The graph currently has 1 node and 0 edges. Node 0 contains the initial problem. 
+
+C. Strategy analysis: The strategy for solving the problem has not been determined yet.
+
+D. Next action options
+    1. Attempt to count the keywords on the entire text. This may be effective if the text is not too long.
+
+    2. Decompose the text into sentences to make it easier to count the keywords. This may be effective if the text is too long to count directly.
+
+Next action: split
+Nodes: [0]
+
+Explanation: The text is long and contains multiple sentences. Splitting the text into sentences will make it easier to count the keywords.
+</example>""",
+]
 
 # Implementation
 

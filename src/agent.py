@@ -257,7 +257,7 @@ OUTPUT:"""
             graph=graph_repr,
         )
 
-        attempts = 0
+        attempts = 1
         action = None
         
         while True:
@@ -267,7 +267,15 @@ OUTPUT:"""
                 break
 
             try:
-                match = re.search(r"Analysis: (.*?)\s*Next action: (\w+)\s*Nodes: \[(.*?)]\s*Explanation: (.*)", res[0], re.DOTALL)
+                match = re.search(
+                    r"Analysis:\s*(.*?)\s*Next action:\s*(\w+)\s*Nodes:\s*\[([0-9,\s]+)]\s*Explanation:\s*(.*)",
+                    res[0],
+                    re.DOTALL
+                )
+
+                if match is None and attempts == 5:
+                    breakpoint()
+
                 analysis = match.group(1)
                 operation = match.group(2)
                 nodes = match.group(3)
@@ -281,7 +289,8 @@ OUTPUT:"""
                 }
 
                 break
-            except:
+            except Exception as exc:
+                print(f"[{attempts} / 5] Failed to parse LLM output: {exc}")
                 attempts += 1
                 pass
 
