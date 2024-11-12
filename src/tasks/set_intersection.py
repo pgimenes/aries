@@ -78,7 +78,7 @@ split
 </next_action>
 
 <nodes>
-Nodes: [0]
+[0]
 </nodes>
 
 <explanation>

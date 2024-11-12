@@ -338,7 +338,7 @@ groundtruth
 </next_action>
 
 <nodes>
-Nodes: [5]
+[5]
 </nodes>
 
 <explanation>
