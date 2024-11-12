@@ -6,18 +6,16 @@ from .common import (
     common_keepbest, 
 )
 
-model = "gpt-4"
-
 problem_definition = "Sort a list of numbers in ascending order."
 
 actions = {
     "split": {
         "description": "Split a sublist into two to decompose the problem.",
         "preconditions": "",
-        "effects": "Two new nodes are created, each containing a sublist of the original list. The new nodes are connected to the original node.",
+        "effects": "Two new nodes are created, each containing a sublist of the original list.",
     },
     "sort": {
-        "description": "Sort a list or sublist.",
+        "description": "Sort a list or sublist. You should attempt sorting any node up to 10 times.",
         "preconditions": "",
         "effects": "A new node is created with the sorted sublist, connected to the original node.",
     },
@@ -34,7 +32,7 @@ actions = {
     "score": {
         "description": "Count the number of mistakes in the node.",
         "preconditions": "",
-        "effects": "The error count is annotated in the metadata of each node, and no new nodes are created.",
+        "effects": "The node is annotated with a score, which is the number of mistakes. The node may also be annotated with a feedback dictionary. The missing_elements key indicates the number of elements that are missing from the sorted list. The extra_elements key indicates the number of elements that are in the sorted list but not in the original list.",
     },
     "keepbest": {
         "description": "Out of the selected nodes, keep the one with the highest score, and delete the rest.",
@@ -42,7 +40,7 @@ actions = {
         "effects": "All selected nodes are deleted, but the one with the highest score is duplicated as a new node.",
     },
     "groundtruth": {
-        "description": "Compare the sorted list in a node with the ground truth.",
+        "description": "Compare a node to the ground truth sorting of node 0.",
         "preconditions": "",
         "effects": "The node is annotated with 'matches_ground_truth: True' or 'False'.",
     }
@@ -321,7 +319,8 @@ Edges:
 (4, 5): {}
 
 OUTPUT:
-Analysis: 
+
+<analysis>
 A. Action history: The current strategy is to decompose the initial list into two smaller sublists, sort them individually, then merge them to produce a solution to the original problem. In step 1, the list was decomposed into two sublists. In step 2, the sublists were sorted. In step 3, the sorted sublists were scored, showing that both sublists were correctly sorted. In step 4, the correctly sorted sublists were aggregated. 
 
 B. Graph state: The graph currently has 6 nodes and 6 edges. Node 0 has the initial problem. Nodes 1 and 2 represent sublists of the original list, obtained in step 1. Nodes 3 and 4 were obtained in step 2, and they represent attempted sortings of the sublists in nodes 1 and 2. Nodes 3 and 4 both have a score of 0, marked in step 3. Node 5 is the result of aggregating nodes 3 and 4, obtained in step 4. The score of node 5 is None, indicating it has not been scored yet. 
@@ -332,15 +331,26 @@ D. Next action options
     1. Directly compare the current aggregation attempt to the ground truth. Scoring is not necessary if the solution is correct, however if it is incorrect we will have no information on the number of mistakes.
 
     2. Score node 5 to check if the aggregation was successful. If the sorted list in node 5 matches the ground truth, the score will be 0, and we can then call the groundtruth action to finish the problem.
+</analysis>
 
-Next action: groundtruth
+<next_action>
+groundtruth
+</next_action>
+
+<nodes>
 Nodes: [5]
+</nodes>
 
-Explanation: We are continuing the strategy outlined in step 1. Currently, the list in node 0 has been split into two sublists in nodes 1 and 2. Nodes 3 and 4 are sorted sublists derived from nodes 1 and 2, respectively. Their score is 0, meaning their sorting is correct. Node 5 is the result of aggregating nodes 3 and 4. We should compare the sorted list in node 5 with the ground truth to determine if the aggregation was successful. If the sorted list in node 5 matches the ground truth, we have successfully solved the problem. Otherwise, we may need to perform additional aggregation attempts until a correct solution is achieved.
+<explanation>
+We are continuing the strategy outlined in step 1. Currently, the list in node 0 has been split into two sublists in nodes 1 and 2. Nodes 3 and 4 are sorted sublists derived from nodes 1 and 2, respectively. Their score is 0, meaning their sorting is correct. Node 5 is the result of aggregating nodes 3 and 4. We should compare the sorted list in node 5 with the ground truth to determine if the aggregation was successful. If the sorted list in node 5 matches the ground truth, we have successfully solved the problem. Otherwise, we may need to perform additional aggregation attempts until a correct solution is achieved.
+</explanation>
+
 </example>""",
 ]
 
 examples = "\n".join(minimal_examples)
+
+additional_instructions = """- Only two nodes can be aggregated at a time, so if there are more than two nodes to aggregate, the aggregation must be done following a tree reduction strategy. E.g. if there are 4 nodes to aggregate, aggregate nodes 1 and 2, then aggregate nodes 3 and 4, and finally aggregate the results of the previous aggregations."""
 
 # Implementation
 
@@ -430,11 +440,13 @@ Output:
 }}
 </Example>
 
-Input: {input}"""
+Input: {input}
+Output: """
 
 def split(
     graph, 
     nodes,
+    model = "",
 ):
     for node in nodes:
         # 1. Send the prompt
@@ -463,7 +475,7 @@ def split(
         )
         
         # Parse the result
-        as_dict = ast.literal_eval(out[0].replace("\n", ""))
+        as_dict = ast.literal_eval(out[0].replace("\n", "").replace("Output:", ""))
 
         # 2. Update the graph
         for k, v in as_dict.items():
@@ -490,12 +502,15 @@ Input: [4, 4, 9, 7, 9, 7, 0, 0, 4, 9, 1, 7, 9, 5, 8, 7, 5, 6, 3, 8, 6, 7, 5, 8, 
 Output: [0, 0, 0, 0, 0, 0, 0, 1, 1, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 8, 8, 8, 8, 8, 9, 9, 9, 9, 9, 9, 9, 9, 9]
 </Examples>
 
-Input: {input}"""
+Input: {input}
+Output: """
 
 def sort(
     graph, 
     nodes,
+    model = "",
 ):
+    sorted_nodes = []
     for node in nodes:
         # 1. Send the prompt
         node_idx = int(node)
@@ -507,11 +522,16 @@ def sort(
         idx = max(list(graph.nodes)) + 1
         graph.add_node(
             idx, 
-            thought=out[0], 
+            thought=out[0].replace(f"Output:", ""), 
             score=None,
             original = graph_node["thought"],
         )
         graph.add_edge(node_idx, idx)
+        sorted_nodes.append(idx)
+
+    # Score all the sorted nodes
+    for node in sorted_nodes:
+        graph, _ = score(graph, [node], model=model)
 
     return graph, False
 
@@ -540,13 +560,16 @@ Incorrectly Sorted: {incorrectly_sorted}
 def refine(
     graph, 
     nodes,
+    model = "",
 ):
+    refined_nodes = []
     for node in nodes:
         node_idx = int(node)
         graph_node = graph.nodes[node_idx]
         
         # Skip if the node is already correct
         if graph_node.get("score", None) is not None and graph_node["score"] == 0:
+            original = graph_node["original"]
             output = graph_node["thought"]
 
         else:
@@ -571,6 +594,11 @@ def refine(
             original=original,
         )
         graph.add_edge(node_idx, idx)
+        refined_nodes.append(idx)
+
+    # Score all the refined nodes
+    for node in refined_nodes:
+        graph, _ = score(graph, [node], model=model)
 
     return graph, False
 
@@ -579,6 +607,7 @@ def refine(
 def score(
     graph, 
     nodes,
+    model = "",
 ):
 
     for node in nodes:
@@ -589,8 +618,9 @@ def score(
         if "score" in graph_node.keys() and graph_node["score"] is not None:
             continue
         
-        # Extract thought
+        feedback = {}
         try:
+            # Extract thought
             if isinstance(graph_node["thought"], list):
                 thought = graph_node["thought"]
             else:
@@ -604,6 +634,12 @@ def score(
                     original = ast.literal_eval(graph_node["original"])
             else:
                 original = ast.literal_eval(graph.nodes[0]["thought"])
+
+            # scoring feedback
+            feedback = {
+                "missing_elements": 0,
+                "extra_elements": 0,
+            }
             
             # Sorting errors term
             errors = 0
@@ -617,22 +653,32 @@ def score(
             for i in range(0, 10):
                 real_freq_dict[i] = original.count(i)
                 thought_freq_dict[i] = thought.count(i)
-                diff = abs(real_freq_dict[i] - thought_freq_dict[i])
-                errors += diff
+                diff = real_freq_dict[i] - thought_freq_dict[i]
+                errors += abs(diff)
+
+                if diff > 0:
+                    feedback["missing_elements"] += abs(diff)
+                if diff < 0:
+                    feedback["extra_elements"] += abs(diff)
         
         # Assign a large error if scoring fails
         except:
             errors = 1000000
 
         graph.nodes[node_idx]["score"] = errors
+        if errors > 0:
+            graph.nodes[node_idx]["feedback"] = feedback
 
     return graph, False
 
 def keepbest(
     graph, 
     nodes,
+    model = "",
 ):
-    return common_keepbest(graph, nodes)
+    # Score all non-scored nodes
+    graph, _ = score(graph, nodes, model=model)
+    return common_keepbest(graph, nodes, model)
 
 
 aggregate_prompt = """<Instruction> Merge the following 2 sorted lists of length X and Y into one sorted list of length X + Y using a merge sort style approach.
@@ -656,6 +702,7 @@ Merged list:
 def aggregate(
     graph, 
     nodes,
+    model = "",
 ):
     if len(nodes) != 2:
         raise ValueError("aggregate action requires exactly 2 nodes to be selected")
@@ -694,11 +741,15 @@ def aggregate(
         node_idx = int(node)
         graph.add_edge(node_idx, idx)
 
+    # Score the aggregated node
+    graph, _ = score(graph, [idx], model)
+
     return graph, False
 
 def groundtruth(
     graph, 
     nodes,
+    model = "",
 ):
     problem = graph.nodes[0]["thought"]
     sorted_problem = ast.literal_eval(problem)
@@ -731,8 +782,9 @@ def groundtruth(
 def io(
     graph,
     nodes,
+    model = "",
 ):
-    return sort(graph, nodes)
+    return sort(graph, nodes, model)
 
 def _tot_schedule(
         width: int,
@@ -810,6 +862,7 @@ Input: {input}"""
 def cot(
     graph, 
     nodes,
+    model = "",
 ):
     for node in nodes:
         # 1. Send the prompt

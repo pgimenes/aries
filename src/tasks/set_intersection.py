@@ -6,8 +6,6 @@ from .common import (
     common_keepbest, 
 )
 
-model = "gpt-4"
-
 problem_definition = "Find the intersection of two sets of numbers."
 
 actions = {
@@ -29,12 +27,12 @@ actions = {
     "refine": {
         "description": "Refine an intersection by fixing any existing mistakes.",
         "preconditions": "The node should have a non-zero score.",
-        "effects": "A new node is created, connected to the original node.",
+        "effects": "A new node is created with a refined sorting of the selected node, connected to the selected node.",
     },
     "score": {
         "description": "Count the number of mistakes in the node.",
         "preconditions": "",
-        "effects": "The error count is annotated in the metadata of each node, and no new nodes are created.",
+        "effects": "The node is annotated with a score, which is the number of mistakes. The node may also be annotated with a feedback dictionary. The missing_elements key indicates the number of elements that are missing from the sorted list. The extra_elements key indicates the number of elements that are in the sorted list but not in the original list.",
     },
     "keepbest": {
         "description": "Out of the selected nodes, keep the one with the highest score, and delete the rest.",
@@ -42,7 +40,7 @@ actions = {
         "effects": "All selected nodes are deleted, but the one with the highest score is duplicated as a new node.",
     },
     "groundtruth": {
-        "description": "Compare the sorted list in a node with the ground truth.",
+        "description": "Compare a node to the ground truth intersection of the sets in node 0.",
         "preconditions": "",
         "effects": "The node is annotated with 'matches_ground_truth: True' or 'False'.",
     }
@@ -61,8 +59,8 @@ Nodes:
 Edges:
 
 OUTPUT:
-Analysis: 
 
+<analysis>
 A. Action history: No actions have been taken yet. 
 
 B. Graph state: The graph currently has 1 node and 0 edges. Node 0 contains the initial problem. 
@@ -73,11 +71,20 @@ D. Next action options
     1. Attempt to intersect the sets directly. This may be effective if the sets are small and the intersection is simple.
 
     2. Decompose the sets by splitting them into smaller sets. This may be necessary if the sets are too large to intersect directly.
+</analysis>
 
-Next action: split
+<next_action>
+split
+</next_action>
+
+<nodes>
 Nodes: [0]
+</nodes>
 
-Explanation: The sets are too large to intersect directly, so we need to split them into smaller sets first.
+<explanation>
+The sets are too large to intersect directly, so we need to split them into smaller sets first.
+</explanation>
+
 </example>""",
 ]
 
@@ -178,6 +185,7 @@ Output: """
 def split(
     graph, 
     nodes,
+    model = "",
 ):
     for node in nodes:
         # 1. Send the prompt
@@ -202,7 +210,7 @@ def split(
         )
         
         # Parse the result
-        as_dict = ast.literal_eval(out[0].replace("\n", ""))
+        as_dict = ast.literal_eval(out[0].replace("\n", "").replace("Output:", ""))
 
         # 2. Update the graph
         for i in range(1, (num_elems // 16) + 1):
@@ -242,7 +250,9 @@ Output:"""
 def intersect(
     graph, 
     nodes,
+    model = "",
 ):
+    intersected_nodes = []
     for node in nodes:
         node_idx = int(node)
 
@@ -262,12 +272,18 @@ def intersect(
             set2=graph.nodes[int(node)]["thought"]["set2"],
         )
         graph.add_edge(node_idx, idx)
+        intersected_nodes.append(idx)
+
+    # Score all intersected nodes
+    for node in intersected_nodes:
+        graph, _ = score(graph, [node], model=model)
 
     return graph, False
 
 def score(
     graph,
     nodes,
+    model = "",
 ):
     for node in nodes:
         node_idx = int(node)
@@ -279,6 +295,11 @@ def score(
             continue
 
         errors = 0
+        feedback = {
+            "missing_elements": 0,
+            "extra_elements": 0,
+            "duplicated_elements": 0,
+        }
         try:
             # Extract set 1
             if isinstance(graph_node["set1"], list):
@@ -308,30 +329,38 @@ def score(
             for i in thought:
                 if i not in intersection:
                     errors += 1
+                    feedback["extra_elements"] += 1
 
             # X_2: elements in C that are missing
             for i in intersection:
                 if i not in thought:
                     errors += 1
+                    feedback["missing_elements"] += 1
 
             # X_d: duplicated elements
             for i in set(thought):
                 if thought.count(i) > 1:
                     errors += 1
+                    feedback["duplicated_elements"] += 1
         except:
             # If the parsing fails, the LLM output is incorrectly formulated
             # so we assign a high error value
             errors = 1000000
 
         graph_node["score"] = errors
+        if errors > 0:
+            graph_node["feedback"] = feedback
 
     return graph, False
 
 def keepbest(
     graph, 
     nodes,
+    model = "",
 ):
-    return common_keepbest(graph, nodes)
+    # Score all non-scored nodes
+    graph, _ = score(graph, nodes, model=model)
+    return common_keepbest(graph, nodes, model=model)
 
 refine_prompt = """<Instruction> The following three sets represent two sets and an intersection set of those two sets. The intersection set is not correct. Fix the intersection set so that it is correct.
 Make sure that the numbers in the intersection set can be found in both input sets. Only output in the format following the examples, with no additional text.</Instruction>
@@ -369,7 +398,9 @@ Incorrect Intersection Set: {incorrect_intersection}"""
 def refine(
     graph, 
     nodes,
+    model = "",
 ):
+    refined_nodes = []
     for node in nodes:
         node_idx = int(node)
 
@@ -399,6 +430,11 @@ def refine(
             set2=graph.nodes[int(node)]["set2"],
         )
         graph.add_edge(node_idx, idx)
+        refined_nodes.append(idx)
+
+    # Score all the refined nodes
+    for node in refined_nodes:
+        graph, _ = score(graph, [node], model=model)
 
     return graph, False
 
@@ -412,6 +448,7 @@ List 2: {input2}
 def aggregate(
     graph, 
     nodes,
+    model = "",
 ):
     if len(nodes) != 2:
         raise ValueError("aggregate action requires exactly 2 nodes to be selected")
@@ -459,11 +496,15 @@ def aggregate(
         node_idx = int(node)
         graph.add_edge(node_idx, idx)
 
+    # Score the aggregated node
+    graph, _ = score(graph, [idx], model)
+
     return graph, False
 
 def groundtruth(
     graph, 
     nodes,
+    model = "",
 ):
     original = graph.nodes[0]["thought"]
 
@@ -497,8 +538,9 @@ def groundtruth(
 def io(
     graph, 
     nodes,
+    model = "",
 ):
-    return intersect(graph, nodes)
+    return intersect(graph, nodes, model=model)
 
 def _tot_schedule(
     width: int,
@@ -568,6 +610,7 @@ Input Set 2: {set2}"""
 def cot(
     graph, 
     nodes,
+    model = "",
 ):
     for node in nodes:
         node_idx = int(node)

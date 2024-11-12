@@ -181,11 +181,13 @@ class LLMAgent:
     ):
         self.env = env
         self.task = task
-
         self.model = model
+
+        # Things injected into the agent prompt
         self.problem_definition = problem_definition
         self.actions = actions
         self.task_examples = getattr(task, "examples")
+        self.additional_instructions = getattr(task, "additional_instructions") if hasattr(task, "additional_instructions") else ""
 
         self.max_iterations = max_iterations if max_iterations is not None else 25
 
@@ -193,24 +195,32 @@ class LLMAgent:
 
         self.prompt = """<Instruction> You are a perspicacious strategy planning agent responsible for solving a problem by guiding the exploration of a thought graph. The starting problem is contained in node 0 of the graph. You must choose a subset of the existing nodes to perform an action on, and define which action to perform.
         
-        Your input is:
-        1. The history of all previously taken actions, which nodes the actions were taken on, and an explanation of the strategy for each action.
-        2. A representation of the current thought graph, including all nodes and edges.
+Your input is:
+1. The history of all previously taken actions, which nodes the actions were taken on, and an explanation of the strategy for each action.
+2. A representation of the current thought graph, including all nodes and edges.
 
-        Your instructions are:
-        1. Provide a detailed analysis of the current state of the thought graph and the strategy towards solving the problem.
-            a. Provide a detailed description of the action history. Explain the strategy behind each action, and how they contribute to solving the problem.
+Your instructions are:
+1. Provide a detailed analysis of the current state of the thought graph and the strategy towards solving the problem.
+    a. Provide a detailed description of the action history. Explain the strategy behind each action, and how they contribute to solving the problem.
 
-            b. Provide a detailed description of the nodes and edges in the graph. Explain how each node corresponds to previous actions.
-            
-            c. Explain whether the strategy outlined in previous actions is successful, unsuccessful, or pending. If the strategy is successful, outline what would be the next steps to reach the solution. If the strategy is unsuccessful, explain why, and outline alternative actions based on this feedback. If still pending, outline which steps are still required to continue exploring the current strategy.
-            
-        2. Choose the next action to take and which nodes the action should be performed on.
+    b. Provide a detailed description of the nodes and edges in the graph. Explain how each node corresponds to previous actions.
+    
+    c. Explain whether the strategy outlined in previous actions is successful, unsuccessful, or pending. If the strategy is unsuccessful, explain why, and outline alternative actions based on this feedback. If still pending, outline which steps are still required to continue exploring the current strategy.
 
-        3. Provide an explanation for the chosen action and nodes. Outline the reasoning behind the choice by reiterating the current strategy to finding a solution to the problem. Explain whether the chosen action is continuing the current strategy, refining it, or exploring a new direction.
-        
-        Additional instructions:
-        - If you think one of the nodes contains the correct solution, you can choose the 'groundtruth' operation to compare it with the ground truth. It's possible this node is already in the graph, or you may need to create it by performing other operations.
+    d. Provide a few alternatives of actions that could be taken next, and explain the reasoning behind each alternative.
+    
+2. Choose the next action to take on the thought graph
+
+3. Choose the node or nodes to perform the action on
+
+4. Provide an explanation for the chosen action and nodes. Outline the reasoning behind the choice by reiterating the current strategy to finding a solution to the problem. Explain whether the chosen action is continuing the current strategy, refining it, or exploring a new direction.
+
+Additional instructions:
+- The format of the output should match the examples. The analysis should be wrapped by <analysis> tags. The next action should be wrapped by <next_action> tags. The nodes should be wrapped by <nodes> tags. The explanation should be wrapped by <explanation> tags.
+
+- If you think one of the nodes contains the correct solution, you can choose the 'groundtruth' operation to compare it with the ground truth. It's possible this node is already in the graph, or you may need to create it by performing other operations.
+
+{additional_instructions}
 
 Problem definition: {problem_definition}
 The following actions are available:
@@ -232,7 +242,7 @@ OUTPUT:"""
         for idx, action in enumerate(self.action_history):
             history += f"Action {idx}: {action['operation']}\n"
             history += f"Nodes: {[int(node) for node in action['nodes']]}\n"
-            history += f"Explanation: {action['explanation']}\n"
+            history += f"Explanation: {action['explanation']}\n\n"
         return history
 
     def _format_action_list(self):
@@ -254,20 +264,26 @@ OUTPUT:"""
             examples=self.task_examples,
             history=self._format_action_history(),
             graph=graph_repr,
+            additional_instructions="",
         )
 
         attempts = 1
+        prompts = []
+        outs = []
         action = None
         
         while True:
             res = llm(prompt, model=self.model)
+            
+            prompts.append(prompt)
+            outs.append(res[0])
 
             if attempts > 5:
                 break
 
             try:
                 match = re.search(
-                    r"Analysis:\s*(.*?)\s*Next action:\s*(\w+)\s*Nodes:\s*\[([0-9,\s]+)]\s*Explanation:\s*(.*)",
+                    r"(?i)<analysis>\s*(.*?)\s*</analysis>\s*<next_action>\s*(\w+)\s*</next_action>\s*<nodes>\s*\[([0-9,\s]+)]\s*</nodes>\s*<explanation>\s*(.*?)\s*</explanation>",
                     res[0],
                     re.DOTALL
                 )
