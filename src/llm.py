@@ -25,17 +25,17 @@ import numpy as np
 # Local hosting
 # ================================================
 
-# import openai
-# client = openai.Client(
-#     base_url="http://127.0.0.1:30000/v1", api_key="EMPTY")
+import openai
+client = openai.Client(
+    base_url="http://127.0.0.1:30000/v1", api_key="EMPTY")
 
 # OpenRouter
 # ================================================
 
-client = OpenAI(
-  base_url="https://openrouter.ai/api/v1",
-  api_key=getenv("OPENROUTER_API_KEY"),
-)
+# client = OpenAI(
+#   base_url="https://openrouter.ai/api/v1",
+#   api_key=getenv("OPENROUTER_API_KEY"),
+# )
 
 def get_proposal_perplexities(res):
     interm = []
