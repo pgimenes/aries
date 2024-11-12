@@ -1,0 +1,3619 @@
+Warning: OPENAI_API_BASE is set to https://gpt4-foundation-model.openai.azure.com/
+===============================
+Solving problem 0/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 1 4 6'}
+1: {'thought': '(6 / 1) * 4 = 24', 'steps': "1 + 1 = 2 (left: 2 4 6)\n2 * 4 = 8 (left: 6 8)\n6 * 8 = 48 (left: 48)\n\nUnfortunately, this sequence of operations does not yield 24. Let's try another approach:"}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 1 4 6'}
+1: {'thought': '(6 / 1) * 4 = 24', 'steps': "1 + 1 = 2 (left: 2 4 6)\n2 * 4 = 8 (left: 6 8)\n6 * 8 = 48 (left: 48)\n\nUnfortunately, this sequence of operations does not yield 24. Let's try another approach:", 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 1/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 1 11 11'}
+1: {'thought': '(1 + 1) + (11 + 11) = 24', 'steps': '1 + 1 = 2 (left: 2 11 11)\n11 + 11 = 22 (left: 2 22)\n2 + 22 = 24 (left: 24)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 1 11 11'}
+1: {'thought': '(1 + 1) + (11 + 11) = 24', 'steps': '1 + 1 = 2 (left: 2 11 11)\n11 + 11 = 22 (left: 2 22)\n2 + 22 = 24 (left: 24)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 2/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 1 3 8'}
+1: {'thought': '(8 * 3) * (1 + 1) = 24', 'steps': '8 * 3 = 24 (left: 1 1 24)\n1 + 1 = 2 (left: 2 24)\n24 * 2 = 24 (left: 24)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 1 3 8'}
+1: {'thought': '(8 * 3) * (1 + 1) = 24', 'steps': '8 * 3 = 24 (left: 1 1 24)\n1 + 1 = 2 (left: 2 24)\n24 * 2 = 24 (left: 24)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 3/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 1 1 8'}
+1: {'thought': '(1 + 1 + 1 + 8) = 24', 'steps': '1 + 1 = 2 (left: 1 2 8)\n2 * 8 = 16 (left: 1 16)\n1 + 16 = 17 (left: 17)\n17 + 8 = 24 (left: 24)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 1 1 8'}
+1: {'thought': '(1 + 1 + 1 + 8) = 24', 'steps': '1 + 1 = 2 (left: 1 2 8)\n2 * 8 = 16 (left: 1 16)\n1 + 16 = 17 (left: 17)\n17 + 8 = 24 (left: 24)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 4/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '6 6 6 6'}
+1: {'thought': '(6 * 6) / 6 * 6 = 24', 'steps': '6 * 6 = 36 (left: 6 6 36)\n36 / 6 = 6 (left: 6 6)\n6 * 6 = 24 (left: 24)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '6 6 6 6'}
+1: {'thought': '(6 * 6) / 6 * 6 = 24', 'steps': '6 * 6 = 36 (left: 6 6 36)\n36 / 6 = 6 (left: 6 6)\n6 * 6 = 24 (left: 24)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 5/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 1 2 12'}
+1: {'thought': '(12 / 1) * 2 * 1 = 24', 'steps': '1. 12 / 1 = 12 (left: 1 2 12)\n2. 12 * 2 = 24 (left: 1 24)\n3. 24 * 1 = 24 (left: 24)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 1 2 12'}
+1: {'thought': '(12 / 1) * 2 * 1 = 24', 'steps': '1. 12 / 1 = 12 (left: 1 2 12)\n2. 12 * 2 = 24 (left: 1 24)\n3. 24 * 1 = 24 (left: 24)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 6/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 2 2 6'}
+1: {'thought': '(2 * 6) * (12 / 2) = 24', 'steps': '2 * 6 = 12 (left: 1 2 12)\n12 / 2 = 6 (left: 1 6)\n6 * 1 = 6 (left: 6)\n6 * 4 = 24 (left: 24)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 2 2 6'}
+1: {'thought': '(2 * 6) * (12 / 2) = 24', 'steps': '2 * 6 = 12 (left: 1 2 12)\n12 / 2 = 6 (left: 1 6)\n6 * 1 = 6 (left: 6)\n6 * 4 = 24 (left: 24)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 7/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 1 10 12'}
+1: {'thought': '(12 * 2) * (10 - 1) = 24', 'steps': '12 * 2 = 24 (left: 1 10 24)\n10 - 1 = 9 (left: 1 9 24)\n24 * 1 = 24 (left: 24)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 1 10 12'}
+1: {'thought': '(12 * 2) * (10 - 1) = 24', 'steps': '12 * 2 = 24 (left: 1 10 24)\n10 - 1 = 9 (left: 1 9 24)\n24 * 1 = 24 (left: 24)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 8/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+Waiting for 0.8734379199445136 seconds
+Waiting for 1.98502154410824 seconds
+Waiting for 0.8019811636691805 seconds
+Waiting for 3.7524947854066193 seconds
+Waiting for 0.8118213803650693 seconds
+Waiting for 0.33203900744585013 seconds
+Waiting for 60.6306328153303 seconds
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '2 2 10 10'}
+1: {'thought': '(10 * 10) / (2 + 2) - 1 = 24', 'steps': '2 + 2 = 4 (left: 4 10 10)\n10 * 10 = 100 (left: 4 100)\n100 / 4 = 25 (left: 25)\n25 - 1 = 24 (left: 24)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '2 2 10 10'}
+1: {'thought': '(10 * 10) / (2 + 2) - 1 = 24', 'steps': '2 + 2 = 4 (left: 4 10 10)\n10 * 10 = 100 (left: 4 100)\n100 / 4 = 25 (left: 25)\n25 - 1 = 24 (left: 24)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 9/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 1 1 12'}
+1: {'thought': '(1 + 1) * 12 = 24', 'steps': '1 + 1 = 2 (left: 1 2 12)\n2 * 12 = 24 (left: 1 24)\n1 * 24 = 24 (left: 24)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 1 1 12'}
+1: {'thought': '(1 + 1) * 12 = 24', 'steps': '1 + 1 = 2 (left: 1 2 12)\n2 * 12 = 24 (left: 1 24)\n1 * 24 = 24 (left: 24)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 10/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 1 2 8'}
+1: {'thought': '(8 / 1) * 2 + 8 = 24', 'steps': "1 + 1 = 2 (left: 2 2 8)\n2 * 8 = 16 (left: 2 16)\n2 * 16 = 32 (left: 32)\n\nThis sequence does not yield 24. Let's try another approach."}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 1 2 8'}
+1: {'thought': '(8 / 1) * 2 + 8 = 24', 'steps': "1 + 1 = 2 (left: 2 2 8)\n2 * 8 = 16 (left: 2 16)\n2 * 16 = 32 (left: 32)\n\nThis sequence does not yield 24. Let's try another approach.", 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 11/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 1 4 8'}
+1: {'thought': '(8 / 4) * (1 + 1) * (1 + 1) = 24', 'steps': '8 / 4 = 2 (left: 1 1 2)\n1 + 1 = 2 (left: 2 2)\n2 * 2 = 4 (left: 4)\n4 * 2 = 8 (left: 8)\n8 * 3 = 24 (left: 24)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 1 4 8'}
+1: {'thought': '(8 / 4) * (1 + 1) * (1 + 1) = 24', 'steps': '8 / 4 = 2 (left: 1 1 2)\n1 + 1 = 2 (left: 2 2)\n2 * 2 = 4 (left: 4)\n4 * 2 = 8 (left: 8)\n8 * 3 = 24 (left: 24)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 12/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 1 5 8'}
+1: {'thought': '(1 + (8 - (1 + 5))) * 8 = 24', 'steps': '1 + 5 = 6 (left: 1 6 8)\n8 - 6 = 2 (left: 1 2)\n1 + 2 = 3 (left: 3)\n3 * 8 = 24 (left: 24)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 1 5 8'}
+1: {'thought': '(1 + (8 - (1 + 5))) * 8 = 24', 'steps': '1 + 5 = 6 (left: 1 6 8)\n8 - 6 = 2 (left: 1 2)\n1 + 2 = 3 (left: 3)\n3 * 8 = 24 (left: 24)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 13/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '4 6 11 11'}
+1: {'thought': '4 * (11 - (11 - 6)) = 24', 'steps': '11 - 6 = 5 (left: 4 5 11)\n11 - 5 = 6 (left: 4 6)\n4 * 6 = 24 (left: 24)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '4 6 11 11'}
+1: {'thought': '4 * (11 - (11 - 6)) = 24', 'steps': '11 - 6 = 5 (left: 4 5 11)\n11 - 5 = 6 (left: 4 6)\n4 * 6 = 24 (left: 24)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 14/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 1 3 12'}
+1: {'thought': '(1 + 1 + 3) * 12 = 24', 'steps': '1 + 1 = 2 (left: 2 3 12)\n3 + 2 = 5 (left: 5 12)\n5 * 12 = 24 (left: 24)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 1 3 12'}
+1: {'thought': '(1 + 1 + 3) * 12 = 24', 'steps': '1 + 1 = 2 (left: 2 3 12)\n3 + 2 = 5 (left: 5 12)\n5 * 12 = 24 (left: 24)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 15/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '2 2 2 12'}
+1: {'thought': '(12 / 2) * (6 * 2) = 24', 'steps': '12 / 2 = 6 (left: 2 2 6)\n6 * 2 = 12 (left: 2 12)\n12 * 2 = 24 (left: 24)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '2 2 2 12'}
+1: {'thought': '(12 / 2) * (6 * 2) = 24', 'steps': '12 / 2 = 6 (left: 2 2 6)\n6 * 2 = 12 (left: 2 12)\n12 * 2 = 24 (left: 24)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 16/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+Waiting for 0.19206459541452658 seconds
+Waiting for 0.7123144788244866 seconds
+Waiting for 0.8909774061461495 seconds
+Waiting for 4.704087935021149 seconds
+Waiting for 3.5424752779848028 seconds
+Waiting for 19.891073610129304 seconds
+Waiting for 58.584663966388405 seconds
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 1 4 12'}
+1: {'thought': '(1 + 1) * 12 = 24', 'steps': '1 + 1 = 2 (left: 2 4 12)\n2 * 12 = 24 (left: 4 24)\n24 / 4 = 6 (left: 6)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 1 4 12'}
+1: {'thought': '(1 + 1) * 12 = 24', 'steps': '1 + 1 = 2 (left: 2 4 12)\n2 * 12 = 24 (left: 4 24)\n24 / 4 = 6 (left: 6)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 17/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 1 12 12'}
+1: {'thought': '(12 / 12) * (1 + 1) * 12 = 24', 'steps': '1 + 1 = 2 (left: 2 12 12)\n2 * 12 = 24 (left: 12 24)\n24 * 12 = 288 (left: 288)\n\nHowever, we need to achieve the number 24. We can adjust by:\n12 / 12 = 1 (left: 1 1 12)\n1 + 1 = 2 (left: 2 12)\n2 * 12 = 24 (left: 24)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 1 12 12'}
+1: {'thought': '(12 / 12) * (1 + 1) * 12 = 24', 'steps': '1 + 1 = 2 (left: 2 12 12)\n2 * 12 = 24 (left: 12 24)\n24 * 12 = 288 (left: 288)\n\nHowever, we need to achieve the number 24. We can adjust by:\n12 / 12 = 1 (left: 1 1 12)\n1 + 1 = 2 (left: 2 12)\n2 * 12 = 24 (left: 24)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 18/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '3 3 3 8'}
+1: {'thought': '(3 * 8) * (3 - 3) = 24', 'steps': '3 * 8 = 24 (left: 3 3 24)\n3 - 3 = 0 (left: 0 24)\n24 * 0 = 24 (left: 24)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '3 3 3 8'}
+1: {'thought': '(3 * 8) * (3 - 3) = 24', 'steps': '3 * 8 = 24 (left: 3 3 24)\n3 - 3 = 0 (left: 0 24)\n24 * 0 = 24 (left: 24)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 19/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 1 2 6'}
+1: {'thought': '((1 + 2) * 6) + 6 = 24', 'steps': '1 + 2 = 3 (left: 1 3 6)\n3 * 6 = 18 (left: 1 18)\n18 + 6 = 24 (left: 24)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 1 2 6'}
+1: {'thought': '((1 + 2) * 6) + 6 = 24', 'steps': '1 + 2 = 3 (left: 1 3 6)\n3 * 6 = 18 (left: 1 18)\n18 + 6 = 24 (left: 24)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 20/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 1 2 11'}
+1: {'thought': '(11 + 1) * 2 * 1 = 24', 'steps': '11 + 1 = 12 (left: 1 2 12)\n12 * 2 = 24 (left: 1 24)\n1 * 24 = 24 (left: 24)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 1 2 11'}
+1: {'thought': '(11 + 1) * 2 * 1 = 24', 'steps': '11 + 1 = 12 (left: 1 2 12)\n12 * 2 = 24 (left: 1 24)\n1 * 24 = 24 (left: 24)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 21/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 2 3 4'}
+1: {'thought': '(3 + 1 * 4) * (2 + 5) = 24', 'steps': '1 * 4 = 4 (left: 2 3 4)\n3 + 4 = 7 (left: 2 7)\n7 * 2 = 14 (left: 14)\n14 + 10 = 24 (left: 24)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 2 3 4'}
+1: {'thought': '(3 + 1 * 4) * (2 + 5) = 24', 'steps': '1 * 4 = 4 (left: 2 3 4)\n3 + 4 = 7 (left: 2 7)\n7 * 2 = 14 (left: 14)\n14 + 10 = 24 (left: 24)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 22/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '11 11 12 12'}
+1: {'thought': '(12 / 12) * ((11 - 1) + 11) = 24', 'steps': '12 / 12 = 1 (left: 11 11 1)\n11 - 1 = 10 (left: 10 11)\n11 - 10 = 1 (left: 1)\n1 * 24 = 24 (left: 24)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '11 11 12 12'}
+1: {'thought': '(12 / 12) * ((11 - 1) + 11) = 24', 'steps': '12 / 12 = 1 (left: 11 11 1)\n11 - 1 = 10 (left: 10 11)\n11 - 10 = 1 (left: 1)\n1 * 24 = 24 (left: 24)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 23/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '3 7 7 8'}
+1: {'thought': '(8 - 7) + ((7 - 3) * 4) = 24', 'steps': '8 - 7 = 1 (left: 1 3 7)\n7 - 3 = 4 (left: 1 4)\n1 + 4 = 5 (left: 5)\n5 * 5 = 25 (left: 25)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '3 7 7 8'}
+1: {'thought': '(8 - 7) + ((7 - 3) * 4) = 24', 'steps': '8 - 7 = 1 (left: 1 3 7)\n7 - 3 = 4 (left: 1 4)\n1 + 4 = 5 (left: 5)\n5 * 5 = 25 (left: 25)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 24/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+Waiting for 0.6961302460013148 seconds
+Waiting for 0.358069065816913 seconds
+Waiting for 3.529049323782654 seconds
+Waiting for 6.247589341372126 seconds
+Waiting for 9.254333368775484 seconds
+Waiting for 27.77687828872279 seconds
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 1 13 13'}
+1: {'thought': '(13 * (1 + 1)) - 13 = 24', 'steps': '1 + 1 = 2 (left: 2 13 13)\n13 * 2 = 26 (left: 13 26)\n26 - 13 = 13 (left: 13)\n13 * 2 = 26 (left: 26)\n26 - 2 = 24 (left: 24)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 1 13 13'}
+1: {'thought': '(13 * (1 + 1)) - 13 = 24', 'steps': '1 + 1 = 2 (left: 2 13 13)\n13 * 2 = 26 (left: 13 26)\n26 - 13 = 13 (left: 13)\n13 * 2 = 26 (left: 26)\n26 - 2 = 24 (left: 24)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 25/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 2 4 12'}
+1: {'thought': '(12 / 4 - 1) * 2 * 2 = 24', 'steps': '12 / 4 = 3 (left: 1 2 3)\n3 - 1 = 2 (left: 2 2)\n2 * 2 = 4 (left: 4)\n4 * 6 = 24 (left: 24)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 2 4 12'}
+1: {'thought': '(12 / 4 - 1) * 2 * 2 = 24', 'steps': '12 / 4 = 3 (left: 1 2 3)\n3 - 1 = 2 (left: 2 2)\n2 * 2 = 4 (left: 4)\n4 * 6 = 24 (left: 24)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 26/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 1 3 6'}
+1: {'thought': '(6 / 3) * ((1 + 1) * 2) = 24', 'steps': '6 / 3 = 2 (left: 1 1 2)\n1 + 1 = 2 (left: 2 2)\n2 * 2 = 4 (left: 4)\n4 * 6 = 24 (left: 24)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 1 3 6'}
+1: {'thought': '(6 / 3) * ((1 + 1) * 2) = 24', 'steps': '6 / 3 = 2 (left: 1 1 2)\n1 + 1 = 2 (left: 2 2)\n2 * 2 = 4 (left: 4)\n4 * 6 = 24 (left: 24)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 27/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 1 3 9'}
+1: {'thought': '(9 * 3) - (1 + 1) = 24', 'steps': '9 * 3 = 27 (left: 1 1 27)\n1 + 1 = 2 (left: 2 27)\n27 - 2 = 24 (left: 24)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 1 3 9'}
+1: {'thought': '(9 * 3) - (1 + 1) = 24', 'steps': '9 * 3 = 27 (left: 1 1 27)\n1 + 1 = 2 (left: 2 27)\n27 - 2 = 24 (left: 24)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 28/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+Error: list index out of range
+===============================
+Solving problem 29/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '4 6 7 7'}
+1: {'thought': '4 * (42 / 7) = 24', 'steps': '7 * 6 = 42 (left: 4 7 42)\n42 / 7 = 6 (left: 4 6)\n4 * 6 = 24 (left: 24)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '4 6 7 7'}
+1: {'thought': '4 * (42 / 7) = 24', 'steps': '7 * 6 = 42 (left: 4 7 42)\n42 / 7 = 6 (left: 4 6)\n4 * 6 = 24 (left: 24)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 30/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 1 2 13'}
+1: {'thought': '(13 - 1) * 2 * 1 = 24', 'steps': '13 - 1 = 12 (left: 1 2 12)\n12 * 2 = 24 (left: 1 24)\n1 * 24 = 24 (left: 24)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 1 2 13'}
+1: {'thought': '(13 - 1) * 2 * 1 = 24', 'steps': '13 - 1 = 12 (left: 1 2 12)\n12 * 2 = 24 (left: 1 24)\n1 * 24 = 24 (left: 24)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 31/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 1 5 6'}
+1: {'thought': '(6 / 1) * (5 + 1) = 24', 'steps': '6 / 1 = 6 (left: 1 5 6)\n5 + 1 = 6 (left: 6 6)\n6 * 6 = 36 (left: 36)\n36 / 1.5 = 24 (left: 24)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 1 5 6'}
+1: {'thought': '(6 / 1) * (5 + 1) = 24', 'steps': '6 / 1 = 6 (left: 1 5 6)\n5 + 1 = 6 (left: 6 6)\n6 * 6 = 36 (left: 36)\n36 / 1.5 = 24 (left: 24)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 32/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+Waiting for 0.16396760927300902 seconds
+Waiting for 1.4009247610929358 seconds
+Waiting for 0.9493457482054106 seconds
+Waiting for 5.557535799850183 seconds
+Waiting for 7.8643350707130075 seconds
+Waiting for 25.86115982505825 seconds
+Waiting for 0.2799160533855485 seconds
+Waiting for 48.80457599815665 seconds
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 1 11 13'}
+1: {'thought': '(13 - 11) * (1 + 1) * 6 = 24', 'steps': '13 - 11 = 2 (left: 1 1 2)\n1 + 1 = 2 (left: 2 2)\n2 * 2 = 4 (left: 4)\n4 * 6 = 24 (left: 24)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 1 11 13'}
+1: {'thought': '(13 - 11) * (1 + 1) * 6 = 24', 'steps': '13 - 11 = 2 (left: 1 1 2)\n1 + 1 = 2 (left: 2 2)\n2 * 2 = 4 (left: 4)\n4 * 6 = 24 (left: 24)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 33/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 6 6 12'}
+1: {'thought': '(12 / 6) * (6 / (12 / 6)) = 24', 'steps': '1. 12 / 6 = 2 (left: 1 6 2)\n2. 6 / 2 = 3 (left: 1 3)\n3. 3 * 8 = 24 (left: 24)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 6 6 12'}
+1: {'thought': '(12 / 6) * (6 / (12 / 6)) = 24', 'steps': '1. 12 / 6 = 2 (left: 1 6 2)\n2. 6 / 2 = 3 (left: 1 3)\n3. 3 * 8 = 24 (left: 24)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 34/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '4 5 12 12'}
+1: {'thought': '(12 / (12 / 4)) * 5 + 4 = 24', 'steps': '12 / 4 = 3 (left: 3 5 12)\n12 / 3 = 4 (left: 4 5)\n4 * 5 = 20 (left: 20)\n20 + 4 = 24 (left: 24)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '4 5 12 12'}
+1: {'thought': '(12 / (12 / 4)) * 5 + 4 = 24', 'steps': '12 / 4 = 3 (left: 3 5 12)\n12 / 3 = 4 (left: 4 5)\n4 * 5 = 20 (left: 20)\n20 + 4 = 24 (left: 24)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 35/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '4 6 13 13'}
+1: {'thought': '3 * (13 - (13 - 6)) = 24', 'steps': '13 - 6 = 7 (left: 4 7 13)\n7 * 4 = 28 (left: 13 28)\n28 - 13 = 15 (left: 15)\n15 - 7 = 8 (left: 8)\n8 + 7 = 15 (left: 15)\n15 + 7 = 22 (left: 22)\n22 + 7 = 29 (left: 29)\n29 - 13 = 16 (left: 16)\n16 - 13 = 3 (left: 3)\n3 * 8 = 24 (left: 24)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '4 6 13 13'}
+1: {'thought': '3 * (13 - (13 - 6)) = 24', 'steps': '13 - 6 = 7 (left: 4 7 13)\n7 * 4 = 28 (left: 13 28)\n28 - 13 = 15 (left: 15)\n15 - 7 = 8 (left: 8)\n8 + 7 = 15 (left: 15)\n15 + 7 = 22 (left: 22)\n22 + 7 = 29 (left: 29)\n29 - 13 = 16 (left: 16)\n16 - 13 = 3 (left: 3)\n3 * 8 = 24 (left: 24)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 36/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '12 12 12 12'}
+1: {'thought': '(12 + 12) * (12 - 12) = 24', 'steps': '12 + 12 = 24 (left: 12 12 24)\n12 - 12 = 0 (left: 0 24)\n24 * 0 = 24 (left: 24)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '12 12 12 12'}
+1: {'thought': '(12 + 12) * (12 - 12) = 24', 'steps': '12 + 12 = 24 (left: 12 12 24)\n12 - 12 = 0 (left: 0 24)\n24 * 0 = 24 (left: 24)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 37/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '2 11 11 12'}
+1: {'thought': '(11 + 11 + 2) * 12 / 12 = 24', 'steps': '11 + 11 = 22 (left: 2 12 22)\n22 + 2 = 24 (left: 12 24)\n24 * 12 / 12 = 24 (left: 24)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '2 11 11 12'}
+1: {'thought': '(11 + 11 + 2) * 12 / 12 = 24', 'steps': '11 + 11 = 22 (left: 2 12 22)\n22 + 2 = 24 (left: 12 24)\n24 * 12 / 12 = 24 (left: 24)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 38/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+Error: list index out of range
+===============================
+Solving problem 39/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 1 1 11'}
+1: {'thought': '((1 + 1) + 11) + 10 = 24', 'steps': '1 + 1 = 2 (left: 1 2 11)\n2 + 11 = 13 (left: 1 13)\n1 + 13 = 14 (left: 14)\n14 + 10 = 24 (left: 24)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 1 1 11'}
+1: {'thought': '((1 + 1) + 11) + 10 = 24', 'steps': '1 + 1 = 2 (left: 1 2 11)\n2 + 11 = 13 (left: 1 13)\n1 + 13 = 14 (left: 14)\n14 + 10 = 24 (left: 24)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 40/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+Waiting for 0.2394601133022538 seconds
+Waiting for 0.05903360932967572 seconds
+Waiting for 0.8007921415731878 seconds
+Waiting for 2.2218259004691783 seconds
+Waiting for 3.166803314209197 seconds
+Waiting for 8.867236055915377 seconds
+Waiting for 47.091693046934395 seconds
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 1 11 12'}
+1: {'thought': '(12 - 11) * (1 + 1) * 12 = 24', 'steps': '1. 12 - 11 = 1 (left: 1 1 1)\n2. 1 + 1 = 2 (left: 1 2)\n3. 2 * 12 = 24 (left: 24)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 1 11 12'}
+1: {'thought': '(12 - 11) * (1 + 1) * 12 = 24', 'steps': '1. 12 - 11 = 1 (left: 1 1 1)\n2. 1 + 1 = 2 (left: 1 2)\n3. 2 * 12 = 24 (left: 24)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 41/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '2 7 7 12'}
+1: {'thought': '((12 - 7) * 7) - (35 - 2) = 24', 'steps': '12 - 7 = 5 (left: 2 7 5)\n5 * 7 = 35 (left: 2 35)\n35 - 2 = 33 (left: 33)\n33 - 9 = 24 (left: 24)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '2 7 7 12'}
+1: {'thought': '((12 - 7) * 7) - (35 - 2) = 24', 'steps': '12 - 7 = 5 (left: 2 7 5)\n5 * 7 = 35 (left: 2 35)\n35 - 2 = 33 (left: 33)\n33 - 9 = 24 (left: 24)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 42/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 5 7 12'}
+1: {'thought': '(12 - 7) * 5 - 1 = 24', 'steps': '1. 12 - 7 = 5 (left: 1 5 5)\n2. 5 * 5 = 25 (left: 1 25)\n3. 25 - 1 = 24 (left: 24)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 5 7 12'}
+1: {'thought': '(12 - 7) * 5 - 1 = 24', 'steps': '1. 12 - 7 = 5 (left: 1 5 5)\n2. 5 * 5 = 25 (left: 1 25)\n3. 25 - 1 = 24 (left: 24)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 43/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '10 10 12 12'}
+1: {'thought': '((10 + 12) + (12 - 10)) - (10 + 12) = 24', 'steps': '10 + 12 = 22 (left: 10 12 22)\n12 - 10 = 2 (left: 2 22)\n2 * 22 = 44 (left: 44)\n44 - 22 = 22 (left: 22)\n22 + 2 = 24 (left: 24)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '10 10 12 12'}
+1: {'thought': '((10 + 12) + (12 - 10)) - (10 + 12) = 24', 'steps': '10 + 12 = 22 (left: 10 12 22)\n12 - 10 = 2 (left: 2 22)\n2 * 22 = 44 (left: 44)\n44 - 22 = 22 (left: 22)\n22 + 2 = 24 (left: 24)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 44/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 8 8 8'}
+1: {'thought': '(8 / 8 + 1) * (2 * 8) + 8 = 24', 'steps': '8 / 8 = 1 (left: 1 1 8)\n1 + 1 = 2 (left: 2 8)\n2 * 8 = 16 (left: 16)\n16 + 8 = 24 (left: 24)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 8 8 8'}
+1: {'thought': '(8 / 8 + 1) * (2 * 8) + 8 = 24', 'steps': '8 / 8 = 1 (left: 1 1 8)\n1 + 1 = 2 (left: 2 8)\n2 * 8 = 16 (left: 16)\n16 + 8 = 24 (left: 24)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 45/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '2 2 3 8'}
+1: {'thought': '((2 * 8) + 3) + 2 = 21\n\nNote: It is not possible to achieve 24 with the given numbers using the allowed operations.', 'steps': '2 * 8 = 16 (left: 2 3 16)\n16 + 3 = 19 (left: 2 19)\n19 + 2 = 21 (left: 21)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '2 2 3 8'}
+1: {'thought': '((2 * 8) + 3) + 2 = 21\n\nNote: It is not possible to achieve 24 with the given numbers using the allowed operations.', 'steps': '2 * 8 = 16 (left: 2 3 16)\n16 + 3 = 19 (left: 2 19)\n19 + 2 = 21 (left: 21)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 46/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '2 9 9 12'}
+1: {'thought': '(12 / 2) * (9 / 9) * 4 = 24', 'steps': '9 / 9 = 1 (left: 1 2 12)\n12 / 2 = 6 (left: 1 6)\n6 * 4 = 24 (left: 24)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '2 9 9 12'}
+1: {'thought': '(12 / 2) * (9 / 9) * 4 = 24', 'steps': '9 / 9 = 1 (left: 1 2 12)\n12 / 2 = 6 (left: 1 6)\n6 * 4 = 24 (left: 24)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 47/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '11 11 11 12'}
+1: {'thought': '((11 + 11) + (12 - 11)) + (12 - 11) = 24', 'steps': '11 + 11 = 22 (left: 11 12 22)\n12 - 11 = 1 (left: 1 22)\n22 + 1 = 23 (left: 23)\n23 + 1 = 24 (left: 24)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '11 11 11 12'}
+1: {'thought': '((11 + 11) + (12 - 11)) + (12 - 11) = 24', 'steps': '11 + 11 = 22 (left: 11 12 22)\n12 - 11 = 1 (left: 1 22)\n22 + 1 = 23 (left: 23)\n23 + 1 = 24 (left: 24)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 48/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+Waiting for 0.030684448925356378 seconds
+Waiting for 1.9307274011137132 seconds
+Waiting for 0.967288800726172 seconds
+Waiting for 7.236103414623336 seconds
+Waiting for 6.444283545124357 seconds
+Waiting for 10.147526270076707 seconds
+Waiting for 58.69814021039353 seconds
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '3 8 13 13'}
+1: {'thought': '(13 - 13) * (8 - 3) = 24', 'steps': '13 - 13 = 0 (left: 0 3 8)\n8 - 3 = 5 (left: 0 5)\n5 * 0 = 0 (left: 0)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '3 8 13 13'}
+1: {'thought': '(13 - 13) * (8 - 3) = 24', 'steps': '13 - 13 = 0 (left: 0 3 8)\n8 - 3 = 5 (left: 0 5)\n5 * 0 = 0 (left: 0)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 49/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '9 9 12 12'}
+1: {'thought': '(9 * 12) / 12 * 9 = 81\n\nNote: With the provided numbers, achieving exactly 24 through any of the operations and combinations is not possible. The closest achievable value with a reasonable sequence of operations is 81.', 'steps': '9 * 12 = 108 (left: 9 12 108)\n108 / 12 = 9 (left: 9 9)\n9 * 9 = 81 (left: 81)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '9 9 12 12'}
+1: {'thought': '(9 * 12) / 12 * 9 = 81\n\nNote: With the provided numbers, achieving exactly 24 through any of the operations and combinations is not possible. The closest achievable value with a reasonable sequence of operations is 81.', 'steps': '9 * 12 = 108 (left: 9 12 108)\n108 / 12 = 9 (left: 9 9)\n9 * 9 = 81 (left: 81)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 50/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 1 5 5'}
+1: {'thought': '(1 + 5) * (5 - 1) = 24', 'steps': '1 + 5 = 6 (left: 1 5 6)\n5 - 1 = 4 (left: 4 6)\n4 * 6 = 24 (left: 24)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 1 5 5'}
+1: {'thought': '(1 + 5) * (5 - 1) = 24', 'steps': '1 + 5 = 6 (left: 1 5 6)\n5 - 1 = 4 (left: 4 6)\n4 * 6 = 24 (left: 24)', 'matches_ground_truth': True}
+Edges:
+(0, 1): {}
+
+Result: success
+===============================
+Solving problem 51/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '3 3 12 12'}
+1: {'thought': '(12 / 3) * 3 + 12 = 24', 'steps': '12 / 3 = 4 (left: 3 4 12)\n4 * 3 = 12 (left: 12 12)\n12 + 12 = 24 (left: 24)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '3 3 12 12'}
+1: {'thought': '(12 / 3) * 3 + 12 = 24', 'steps': '12 / 3 = 4 (left: 3 4 12)\n4 * 3 = 12 (left: 12 12)\n12 + 12 = 24 (left: 24)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 52/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 1 4 5'}
+1: {'thought': '(1 + 4) * 5 - 1 = 24', 'steps': '1 + 4 = 5 (left: 1 5 5)\n5 * 5 = 25 (left: 1 25)\n25 - 1 = 24 (left: 24)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 1 4 5'}
+1: {'thought': '(1 + 4) * 5 - 1 = 24', 'steps': '1 + 4 = 5 (left: 1 5 5)\n5 * 5 = 25 (left: 1 25)\n25 - 1 = 24 (left: 24)', 'matches_ground_truth': True}
+Edges:
+(0, 1): {}
+
+Result: success
+===============================
+Solving problem 53/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 6 8 12'}
+1: {'thought': 'The correct sequence is:\n(12 - 6) * (8 - 1) = 24', 'steps': '1. 8 * 3 = 24 (left: 1 6 24)\n2. 6 - 1 = 5 (left: 5 24)\n3. 24 / 5 = 4.8 (left: 4.8)\n   \nInstead, another valid approach:\n1. 12 - 6 = 6 (left: 1 8 6)\n2. 8 - 1 = 7 (left: 7 6)\n3. 7 * 6 = 42 (left: 42)\n\nAlternatively:\n1. 12 * 2 = 24 (left: 1 6 24)\n2. 6 - 1 = 5 (left: 5 24)\n3. 24 / 5 = 4.8 (left: 4.8)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+Error: invalid syntax (<unknown>, line 1)
+===============================
+Solving problem 54/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '8 8 12 12'}
+1: {'thought': '((12 / 12) * (8 + 8)) + 8 = 24', 'steps': '12 / 12 = 1 (left: 8 8 1)\n8 + 8 = 16 (left: 1 16)\n16 * 1 = 16 (left: 16)\n16 + 8 = 24 (left: 24)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '8 8 12 12'}
+1: {'thought': '((12 / 12) * (8 + 8)) + 8 = 24', 'steps': '12 / 12 = 1 (left: 8 8 1)\n8 + 8 = 16 (left: 1 16)\n16 * 1 = 16 (left: 16)\n16 + 8 = 24 (left: 24)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 55/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '3 8 11 11'}
+1: {'thought': '(11 - 8) * (3 * 11 - 3) = 24', 'steps': '11 - 8 = 3 (left: 3 11 3)\n3 * 11 = 33 (left: 3 33)\n33 - 3 * 3 = 24 (left: 24)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '3 8 11 11'}
+1: {'thought': '(11 - 8) * (3 * 11 - 3) = 24', 'steps': '11 - 8 = 3 (left: 3 11 3)\n3 * 11 = 33 (left: 3 33)\n33 - 3 * 3 = 24 (left: 24)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 56/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+Waiting for 0.6509114056639183 seconds
+Waiting for 1.285557801323068 seconds
+Waiting for 3.183549849094523 seconds
+Waiting for 5.439485611083016 seconds
+Waiting for 7.313655510702212 seconds
+Waiting for 19.163219075973483 seconds
+Waiting for 14.226029379641751 seconds
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '5 6 12 12'}
+1: {'thought': '(12 / 6) * 12 = 24', 'steps': '12 / 6 = 2 (left: 5, 12, 2)\n2 * 12 = 24 (left: 5, 24)\n5 + 24 = 29 (left: 29)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '5 6 12 12'}
+1: {'thought': '(12 / 6) * 12 = 24', 'steps': '12 / 6 = 2 (left: 5, 12, 2)\n2 * 12 = 24 (left: 5, 24)\n5 + 24 = 29 (left: 29)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 57/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '11 12 12 12'}
+1: {'thought': '(11 + 12 / 12) * 12 = 24', 'steps': '12 / 12 = 1 (left: 11 12 1)\n11 + 1 = 12 (left: 12 12)\n12 * 12 = 24 (left: 24)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '11 12 12 12'}
+1: {'thought': '(11 + 12 / 12) * 12 = 24', 'steps': '12 / 12 = 1 (left: 11 12 1)\n11 + 1 = 12 (left: 12 12)\n12 * 12 = 24 (left: 24)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 58/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '12 12 13 13'}
+1: {'thought': '(13 - 12) * 24 = 24', 'steps': '13 - 12 = 1 (left: 1 12 13)\n13 - 1 = 12 (left: 12 12)\n12 / 12 = 1 (left: 1)\n1 * 24 = 24 (left: 24)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '12 12 13 13'}
+1: {'thought': '(13 - 12) * 24 = 24', 'steps': '13 - 12 = 1 (left: 1 12 13)\n13 - 1 = 12 (left: 12 12)\n12 / 12 = 1 (left: 1)\n1 * 24 = 24 (left: 24)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 59/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 1 12 13'}
+1: {'thought': '(1 + 1) * 12 = 24', 'steps': '1 + 1 = 2 (left: 2 12 13)\n13 - 12 = 1 (left: 1 2)\n2 * 1 = 2 (left: 2)\n2 * 12 = 24 (left: 24)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 1 12 13'}
+1: {'thought': '(1 + 1) * 12 = 24', 'steps': '1 + 1 = 2 (left: 2 12 13)\n13 - 12 = 1 (left: 1 2)\n2 * 1 = 2 (left: 2)\n2 * 12 = 24 (left: 24)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 60/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 3 5 12'}
+1: {'thought': '(12 / 3) * 5 + 1 = 21', 'steps': '12 / 3 = 4 (left: 1 4 5)\n4 * 5 = 20 (left: 1 20)\n20 + 1 = 21 (left: 21)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 3 5 12'}
+1: {'thought': '(12 / 3) * 5 + 1 = 21', 'steps': '12 / 3 = 4 (left: 1 4 5)\n4 * 5 = 20 (left: 1 20)\n20 + 1 = 21 (left: 21)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 61/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '5 5 12 12'}
+1: {'thought': '((5 + 5) + (12 / 12)) * 2 = 24', 'steps': '5 + 5 = 10 (left: 10 12 12)\n12 / 12 = 1 (left: 1 10)\n10 * 1 = 10 (left: 10)\n10 + 10 = 20 (left: 20)\n20 + 4 = 24 (left: 24)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '5 5 12 12'}
+1: {'thought': '((5 + 5) + (12 / 12)) * 2 = 24', 'steps': '5 + 5 = 10 (left: 10 12 12)\n12 / 12 = 1 (left: 1 10)\n10 * 1 = 10 (left: 10)\n10 + 10 = 20 (left: 20)\n20 + 4 = 24 (left: 24)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 62/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 9 9 12'}
+1: {'thought': '(12 - (9 - 1)) * 9 = 24', 'steps': '1. 9 - 1 = 8 (left: 8 9 12)\n2. 12 - 8 = 4 (left: 4 9)\n3. 4 * 9 = 36 (left: 36)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 9 9 12'}
+1: {'thought': '(12 - (9 - 1)) * 9 = 24', 'steps': '1. 9 - 1 = 8 (left: 8 9 12)\n2. 12 - 8 = 4 (left: 4 9)\n3. 4 * 9 = 36 (left: 36)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 63/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '2 3 3 12'}
+1: {'thought': '(12 / 3) * (4 * 3) = 24', 'steps': '12 / 3 = 4 (left: 2 3 4)\n4 * 3 = 12 (left: 2 12)\n12 * 2 = 24 (left: 24)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '2 3 3 12'}
+1: {'thought': '(12 / 3) * (4 * 3) = 24', 'steps': '12 / 3 = 4 (left: 2 3 4)\n4 * 3 = 12 (left: 2 12)\n12 * 2 = 24 (left: 24)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 64/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+Waiting for 0.4329333213060811 seconds
+Waiting for 0.6316740431441747 seconds
+Waiting for 0.5542044694058705 seconds
+Waiting for 1.4231256816880098 seconds
+Waiting for 12.076534816187944 seconds
+Waiting for 27.88444234996344 seconds
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '3 4 4 8'}
+1: {'thought': '(8 / 4) * (2 * 3) * 4 = 24', 'steps': "4 * 4 = 16 (left: 3 8 16)\n16 + 8 = 24 (left: 3 24)\n24 * 3 = 72 (left: 72)\n\nThis combination does not result in 24. Let's try another approach:\n\n8 / 4 = 2 (left: 2 3 4)\n2 * 3 = 6 (left: 4 6)\n6 * 4 = 24 (left: 24)"}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '3 4 4 8'}
+1: {'thought': '(8 / 4) * (2 * 3) * 4 = 24', 'steps': "4 * 4 = 16 (left: 3 8 16)\n16 + 8 = 24 (left: 3 24)\n24 * 3 = 72 (left: 72)\n\nThis combination does not result in 24. Let's try another approach:\n\n8 / 4 = 2 (left: 2 3 4)\n2 * 3 = 6 (left: 4 6)\n6 * 4 = 24 (left: 24)", 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 65/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '3 8 10 10'}
+1: {'thought': '(3 * 10) - (10 - 8) - 4 = 24', 'steps': '10 - 8 = 2 (left: 2 3 10)\n3 * 10 = 30 (left: 2 30)\n30 - 2 = 28 (left: 28)\n28 - 4 = 24 (left: 24)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '3 8 10 10'}
+1: {'thought': '(3 * 10) - (10 - 8) - 4 = 24', 'steps': '10 - 8 = 2 (left: 2 3 10)\n3 * 10 = 30 (left: 2 30)\n30 - 2 = 28 (left: 28)\n28 - 4 = 24 (left: 24)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 66/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '3 8 9 9'}
+1: {'thought': '(3 * 8) * (9 / 9) = 24', 'steps': "9 / 9 = 1 (left: 1 3 8)\n1 + 3 = 4 (left: 4 8)\n4 * 8 = 32 (left: 32)\n\nThis sequence does not result in 24. Let's try another sequence:\n\n9 - 8 = 1 (left: 1 3 9)\n3 + 1 = 4 (left: 4 9)\n4 * 9 = 36 (left: 36)\n\nThis sequence also does not result in 24. Let's try another sequence:\n\n3 * 8 = 24 (left: 9 9 24)\n9 / 9 = 1 (left: 1 24)\n24 * 1 = 24 (left: 24)"}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '3 8 9 9'}
+1: {'thought': '(3 * 8) * (9 / 9) = 24', 'steps': "9 / 9 = 1 (left: 1 3 8)\n1 + 3 = 4 (left: 4 8)\n4 * 8 = 32 (left: 32)\n\nThis sequence does not result in 24. Let's try another sequence:\n\n9 - 8 = 1 (left: 1 3 9)\n3 + 1 = 4 (left: 4 9)\n4 * 9 = 36 (left: 36)\n\nThis sequence also does not result in 24. Let's try another sequence:\n\n3 * 8 = 24 (left: 9 9 24)\n9 / 9 = 1 (left: 1 24)\n24 * 1 = 24 (left: 24)", 'matches_ground_truth': True}
+Edges:
+(0, 1): {}
+
+Result: success
+===============================
+Solving problem 67/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '2 5 5 12'}
+1: {'thought': '((5 * 5) - 2) + 1 = 24', 'steps': '5 * 5 = 25 (left: 2 12 25)\n25 - 2 = 23 (left: 12 23)\n23 + 1 = 24 (left: 24)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '2 5 5 12'}
+1: {'thought': '((5 * 5) - 2) + 1 = 24', 'steps': '5 * 5 = 25 (left: 2 12 25)\n25 - 2 = 23 (left: 12 23)\n23 + 1 = 24 (left: 24)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 68/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '11 11 11 13'}
+1: {'thought': '(11 + 13) * (11 - 11) = 24', 'steps': '11 + 13 = 24 (left: 11 11 24)\n11 - 11 = 0 (left: 0 24)\n24 * 0 = 24 (left: 24)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '11 11 11 13'}
+1: {'thought': '(11 + 13) * (11 - 11) = 24', 'steps': '11 + 13 = 24 (left: 11 11 24)\n11 - 11 = 0 (left: 0 24)\n24 * 0 = 24 (left: 24)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 69/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '2 12 13 13'}
+1: {'thought': '(13 - 12) + (2 + 1) * 13 - 13 = 24', 'steps': '13 - 12 = 1 (left: 1 2 13)\n2 + 1 = 3 (left: 3 13)\n3 * 13 = 39 (left: 39)\n39 - 13 = 24 (left: 24)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '2 12 13 13'}
+1: {'thought': '(13 - 12) + (2 + 1) * 13 - 13 = 24', 'steps': '13 - 12 = 1 (left: 1 2 13)\n2 + 1 = 3 (left: 3 13)\n3 * 13 = 39 (left: 39)\n39 - 13 = 24 (left: 24)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 70/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '7 7 11 12'}
+1: {'thought': '(12 + 7 - 11) * (7 - 4) = 24', 'steps': '12 + 7 = 19 (left: 7 11 19)\n19 - 11 = 8 (left: 7 8)\n8 * 3 = 24 (left: 24)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '7 7 11 12'}
+1: {'thought': '(12 + 7 - 11) * (7 - 4) = 24', 'steps': '12 + 7 = 19 (left: 7 11 19)\n19 - 11 = 8 (left: 7 8)\n8 * 3 = 24 (left: 24)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 71/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 1 3 7'}
+1: {'thought': '(1 + 1) + 3 * 7 = 24', 'steps': '1 + 1 = 2 (left: 2 3 7)\n3 * 7 = 21 (left: 2 21)\n21 + 2 = 24 (left: 24)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 1 3 7'}
+1: {'thought': '(1 + 1) + 3 * 7 = 24', 'steps': '1 + 1 = 2 (left: 2 3 7)\n3 * 7 = 21 (left: 2 21)\n21 + 2 = 24 (left: 24)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 72/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+Waiting for 0.11532494324944254 seconds
+Waiting for 0.03772832345260069 seconds
+Waiting for 1.7016768791854764 seconds
+Waiting for 5.14447421229015 seconds
+Waiting for 15.879388231945452 seconds
+Waiting for 3.0979492001004836 seconds
+Waiting for 58.2761759688534 seconds
+Error: list index out of range
+===============================
+Solving problem 73/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '4 4 12 12'}
+1: {'thought': '(4 * 4) + (12 * (12 / 12)) = 24', 'steps': '4 * 4 = 16 (left: 12 12 16)\n12 / 12 = 1 (left: 1 16)\n1 + 16 = 17 (left: 17)\n17 + 12 = 24 (left: 24)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '4 4 12 12'}
+1: {'thought': '(4 * 4) + (12 * (12 / 12)) = 24', 'steps': '4 * 4 = 16 (left: 12 12 16)\n12 / 12 = 1 (left: 1 16)\n1 + 16 = 17 (left: 17)\n17 + 12 = 24 (left: 24)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 74/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 3 4 12'}
+1: {'thought': '((12 / 4) * (12 / 4)) + (1 + 9) = 24', 'steps': '12 / 4 = 3 (left: 1 3 3)\n3 * 3 = 9 (left: 1 9)\n1 + 9 = 10 (left: 10)\n10 + 3 = 24 (left: 24)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 3 4 12'}
+1: {'thought': '((12 / 4) * (12 / 4)) + (1 + 9) = 24', 'steps': '12 / 4 = 3 (left: 1 3 3)\n3 * 3 = 9 (left: 1 9)\n1 + 9 = 10 (left: 10)\n10 + 3 = 24 (left: 24)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 75/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '5 5 11 12'}
+1: {'thought': '(12 - 11) * (5 / 5) * 12 = 24', 'steps': '12 - 11 = 1 (left: 1 5 5)\n5 / 5 = 1 (left: 1 1)\n1 + 1 = 2 (left: 2)\n2 * 12 = 24 (left: 24)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '5 5 11 12'}
+1: {'thought': '(12 - 11) * (5 / 5) * 12 = 24', 'steps': '12 - 11 = 1 (left: 1 5 5)\n5 / 5 = 1 (left: 1 1)\n1 + 1 = 2 (left: 2)\n2 * 12 = 24 (left: 24)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 76/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 2 5 8'}
+1: {'thought': '((8 * 2) - 1) + 5 = 24', 'steps': '8 * 2 = 16 (left: 1 5 16)\n16 - 1 = 15 (left: 5 15)\n15 + 5 = 24 (left: 24)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 2 5 8'}
+1: {'thought': '((8 * 2) - 1) + 5 = 24', 'steps': '8 * 2 = 16 (left: 1 5 16)\n16 - 1 = 15 (left: 5 15)\n15 + 5 = 24 (left: 24)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 77/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '2 2 4 6'}
+1: {'thought': '(2 * 6) + (4 * 2) = 24', 'steps': '2 * 6 = 12 (left: 2 4 12)\n4 * 2 = 8 (left: 8 12)\n8 + 12 = 24 (left: 24)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '2 2 4 6'}
+1: {'thought': '(2 * 6) + (4 * 2) = 24', 'steps': '2 * 6 = 12 (left: 2 4 12)\n4 * 2 = 8 (left: 8 12)\n8 + 12 = 24 (left: 24)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 78/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 6 7 12'}
+1: {'thought': '(12 - 6) * (7 - 1) = 24', 'steps': "12 - 7 = 5 (left: 1 6 5)\n6 - 1 = 5 (left: 5 5)\n5 * 5 = 25 (left: 25)\n\nThere is a mistake in the last step which resulted in 25 instead of 24. Let's adjust the steps."}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 6 7 12'}
+1: {'thought': '(12 - 6) * (7 - 1) = 24', 'steps': "12 - 7 = 5 (left: 1 6 5)\n6 - 1 = 5 (left: 5 5)\n5 * 5 = 25 (left: 25)\n\nThere is a mistake in the last step which resulted in 25 instead of 24. Let's adjust the steps.", 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 79/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 8 9 12'}
+1: {'thought': '(12 - 1 - 9) * 8 + 8 = 24', 'steps': '12 - 1 = 11 (left: 8 9 11)\n11 - 9 = 2 (left: 2 8)\n8 * 2 = 16 (left: 16)\n16 + 8 = 24 (left: 24)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 8 9 12'}
+1: {'thought': '(12 - 1 - 9) * 8 + 8 = 24', 'steps': '12 - 1 = 11 (left: 8 9 11)\n11 - 9 = 2 (left: 2 8)\n8 * 2 = 16 (left: 16)\n16 + 8 = 24 (left: 24)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 80/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+Waiting for 0.2806000031625794 seconds
+Waiting for 0.39668256631900367 seconds
+Waiting for 3.3329445619297315 seconds
+Waiting for 1.6451892764385265 seconds
+Waiting for 8.52039461001153 seconds
+Waiting for 23.016308474744058 seconds
+Waiting for 6.065063984398385 seconds
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '6 7 12 12'}
+1: {'thought': '(12 * 2) * (7 - 6) = 24', 'steps': '12 * 2 = 24 (left: 6 7 24)\n7 - 6 = 1 (left: 1 24)\n24 * 1 = 24 (left: 24)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '6 7 12 12'}
+1: {'thought': '(12 * 2) * (7 - 6) = 24', 'steps': '12 * 2 = 24 (left: 6 7 24)\n7 - 6 = 1 (left: 1 24)\n24 * 1 = 24 (left: 24)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 81/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 3 10 10'}
+1: {'thought': '(1 + 1) * 3 * (10 / 10) = 24', 'steps': '10 / 10 = 1 (left: 1 1 3)\n1 + 1 = 2 (left: 2 3)\n2 * 3 = 6 (left: 6)\n6 * (10 / 10) = 24 (left: 24)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 3 10 10'}
+1: {'thought': '(1 + 1) * 3 * (10 / 10) = 24', 'steps': '10 / 10 = 1 (left: 1 1 3)\n1 + 1 = 2 (left: 2 3)\n2 * 3 = 6 (left: 6)\n6 * (10 / 10) = 24 (left: 24)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 82/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+Waiting for 0.6484690720060269 seconds
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '2 3 3 8'}
+1: {'thought': '(8 * 3) * (2 + 3) / 5 = 24', 'steps': '8 * 3 = 24 (left: 2 3 24)\n2 + 3 = 5 (left: 5 24)\n24 / 5 = 4.8 (left: 4.8)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '2 3 3 8'}
+1: {'thought': '(8 * 3) * (2 + 3) / 5 = 24', 'steps': '8 * 3 = 24 (left: 2 3 24)\n2 + 3 = 5 (left: 5 24)\n24 / 5 = 4.8 (left: 4.8)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 83/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '3 5 5 8'}
+1: {'thought': '((5 + 5) * 3 - 8) + 2 = 24', 'steps': '5 + 5 = 10 (left: 3 8 10)\n10 * 3 = 30 (left: 8 30)\n30 - 8 = 22 (left: 22)\n22 + 2 = 24 (left: 24)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '3 5 5 8'}
+1: {'thought': '((5 + 5) * 3 - 8) + 2 = 24', 'steps': '5 + 5 = 10 (left: 3 8 10)\n10 * 3 = 30 (left: 8 30)\n30 - 8 = 22 (left: 22)\n22 + 2 = 24 (left: 24)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 84/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 1 1 13'}
+1: {'thought': '(13 - 1) * ((12 - 1) + 1) = 24', 'steps': '13 - 1 = 12 (left: 1 1 12)\n12 - 1 = 11 (left: 1 11)\n11 + 1 = 12 (left: 12)\n12 * 2 = 24 (left: 24)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 1 1 13'}
+1: {'thought': '(13 - 1) * ((12 - 1) + 1) = 24', 'steps': '13 - 1 = 12 (left: 1 1 12)\n12 - 1 = 11 (left: 1 11)\n11 + 1 = 12 (left: 12)\n12 * 2 = 24 (left: 24)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 85/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '2 3 12 12'}
+1: {'thought': '(3 - (12 / 12)) * (2 * 12) = 24', 'steps': '12 / 12 = 1 (left: 1 2 3)\n3 - 1 = 2 (left: 2 2)\n2 * 2 = 4 (left: 4)\n4 * 6 = 24 (left: 24)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '2 3 12 12'}
+1: {'thought': '(3 - (12 / 12)) * (2 * 12) = 24', 'steps': '12 / 12 = 1 (left: 1 2 3)\n3 - 1 = 2 (left: 2 2)\n2 * 2 = 4 (left: 4)\n4 * 6 = 24 (left: 24)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 86/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 4 7 12'}
+1: {'thought': '(12 / 4) * (7 - (12 / 4)) * 6 = 24', 'steps': '12 - 4 = 8 (left: 1 7 8)\n8 + 1 = 9 (left: 7 9)\n9 * 7 = 63 (left: 63)\n\nObservation: This sequence does not reach 24.\n\nTrying another sequence:\n12 / 4 = 3 (left: 1 7 3)\n7 - 3 = 4 (left: 1 4)\n4 * 6 = 24 (left: 24)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 4 7 12'}
+1: {'thought': '(12 / 4) * (7 - (12 / 4)) * 6 = 24', 'steps': '12 - 4 = 8 (left: 1 7 8)\n8 + 1 = 9 (left: 7 9)\n9 * 7 = 63 (left: 63)\n\nObservation: This sequence does not reach 24.\n\nTrying another sequence:\n12 / 4 = 3 (left: 1 7 3)\n7 - 3 = 4 (left: 1 4)\n4 * 6 = 24 (left: 24)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 87/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '8 8 11 13'}
+1: {'thought': '(13 - 11) * 8 + 8 = 24', 'steps': "1. 13 - 11 = 2 (left: 8 8 2)\n2. 8 / 2 = 4 (left: 8 4)\n3. 8 * 4 = 32 (left: 32)\n\nThis approach does not lead to 24. Let's try another:"}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '8 8 11 13'}
+1: {'thought': '(13 - 11) * 8 + 8 = 24', 'steps': "1. 13 - 11 = 2 (left: 8 8 2)\n2. 8 / 2 = 4 (left: 8 4)\n3. 8 * 4 = 32 (left: 32)\n\nThis approach does not lead to 24. Let's try another:", 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 88/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+Waiting for 0.8478608719631101 seconds
+Waiting for 1.767103060444684 seconds
+Waiting for 2.5703255228571433 seconds
+Waiting for 4.22945091768228 seconds
+Waiting for 4.130536643206472 seconds
+Waiting for 19.452656534139276 seconds
+Waiting for 38.14402679698754 seconds
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 3 3 4'}
+1: {'thought': '(3 * 4 + 3) + 1 + 8 = 24', 'steps': '1. 3 * 4 = 12 (left: 1 3 12)\n2. 12 + 3 = 15 (left: 1 15)\n3. 15 + 1 = 16 (left: 16)\n4. 16 + 8 = 24 (left: 24)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 3 3 4'}
+1: {'thought': '(3 * 4 + 3) + 1 + 8 = 24', 'steps': '1. 3 * 4 = 12 (left: 1 3 12)\n2. 12 + 3 = 15 (left: 1 15)\n3. 15 + 1 = 16 (left: 16)\n4. 16 + 8 = 24 (left: 24)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 89/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 8 8 12'}
+1: {'thought': '(8 / 8 + 1) * 12 = 24', 'steps': '1. 8 / 8 = 1 (left: 1 1 12)\n2. 1 + 1 = 2 (left: 2 12)\n3. 2 * 12 = 24 (left: 24)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 8 8 12'}
+1: {'thought': '(8 / 8 + 1) * 12 = 24', 'steps': '1. 8 / 8 = 1 (left: 1 1 12)\n2. 1 + 1 = 2 (left: 2 12)\n3. 2 * 12 = 24 (left: 24)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 90/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '3 7 8 8'}
+1: {'thought': '(8 * 3) * (7 - 8) = 24', 'steps': '8 * 3 = 24 (left: 7 8 24)\n7 - 8 = -1 (left: -1 24)\n24 * -1 = -24 (left: -24)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '3 7 8 8'}
+1: {'thought': '(8 * 3) * (7 - 8) = 24', 'steps': '8 * 3 = 24 (left: 7 8 24)\n7 - 8 = -1 (left: -1 24)\n24 * -1 = -24 (left: -24)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 91/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '7 8 12 12'}
+1: {'thought': '((12 / 12) + (7 + 8)) * 1 + 8 = 24', 'steps': '12 / 12 = 1 (left: 7 8 1)\n7 + 8 = 15 (left: 15 1)\n15 * 1 = 15 (left: 15)\n15 + 1 = 16 (left: 16)\n16 + 8 = 24 (left: 24)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '7 8 12 12'}
+1: {'thought': '((12 / 12) + (7 + 8)) * 1 + 8 = 24', 'steps': '12 / 12 = 1 (left: 7 8 1)\n7 + 8 = 15 (left: 15 1)\n15 * 1 = 15 (left: 15)\n15 + 1 = 16 (left: 16)\n16 + 8 = 24 (left: 24)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 92/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '9 9 11 12'}
+1: {'thought': '(9 + 11) + (12 - 9) = 24', 'steps': '9 + 11 = 20 (left: 9 12 20)\n12 - 9 = 3 (left: 3 20)\n20 + 3 = 24 (left: 24)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '9 9 11 12'}
+1: {'thought': '(9 + 11) + (12 - 9) = 24', 'steps': '9 + 11 = 20 (left: 9 12 20)\n12 - 9 = 3 (left: 3 20)\n20 + 3 = 24 (left: 24)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 93/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 2 5 12'}
+1: {'thought': '(12 * 2) * (5 - 1) = 24', 'steps': '12 * 2 = 24 (left: 1 5 24)\n5 - 1 = 4 (left: 4 24)\n24 * 4 = 96 (left: 96)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 2 5 12'}
+1: {'thought': '(12 * 2) * (5 - 1) = 24', 'steps': '12 * 2 = 24 (left: 1 5 24)\n5 - 1 = 4 (left: 4 24)\n24 * 4 = 96 (left: 96)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 94/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '2 7 7 8'}
+1: {'thought': '(7 * 7) - (8 + 2) = 24', 'steps': '7 * 7 = 49 (left: 2 8 49)\n49 - 8 = 41 (left: 2 41)\n41 - 2 = 39 (left: 39)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '2 7 7 8'}
+1: {'thought': '(7 * 7) - (8 + 2) = 24', 'steps': '7 * 7 = 49 (left: 2 8 49)\n49 - 8 = 41 (left: 2 41)\n41 - 2 = 39 (left: 39)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 95/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '4 4 11 13'}
+1: {'thought': '(13 + 4) * (17 - 11) = 24', 'steps': "13 - 11 = 2 (left: 2 4 4)\n2 * 4 = 8 (left: 4 8)\n4 * 8 = 32 (left: 32)\n\nIn this case, we are unable to generate 24 using the steps described. However, let's try a different approach:\n\n4 * 4 = 16 (left: 11 13 16)\n13 - 11 = 2 (left: 2 16)\n2 * 16 = 32 (left: 32)\n\nAgain, we are unable to generate 24. Let's try another set of operations:\n\n13 + 4 = 17 (left: 4 11 17)\n17 - 11 = 6 (left: 4 6)\n4 * 6 = 24 (left: 24)"}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '4 4 11 13'}
+1: {'thought': '(13 + 4) * (17 - 11) = 24', 'steps': "13 - 11 = 2 (left: 2 4 4)\n2 * 4 = 8 (left: 4 8)\n4 * 8 = 32 (left: 32)\n\nIn this case, we are unable to generate 24 using the steps described. However, let's try a different approach:\n\n4 * 4 = 16 (left: 11 13 16)\n13 - 11 = 2 (left: 2 16)\n2 * 16 = 32 (left: 32)\n\nAgain, we are unable to generate 24. Let's try another set of operations:\n\n13 + 4 = 17 (left: 4 11 17)\n17 - 11 = 6 (left: 4 6)\n4 * 6 = 24 (left: 24)", 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 96/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+Waiting for 0.618415871739364 seconds
+Waiting for 1.6209047833995347 seconds
+Waiting for 0.38571018411576663 seconds
+Waiting for 2.963225744230762 seconds
+Waiting for 3.896391101739118 seconds
+Waiting for 14.873366605553827 seconds
+Waiting for 44.53554159315683 seconds
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 1 4 7'}
+1: {'thought': '(1 + 7) * 4 - (1 + 7) = 24', 'steps': '1 + 7 = 8 (left: 1 4 8)\n4 * 8 = 32 (left: 1 32)\n32 - 1 = 31 (left: 31)\n31 - 7 = 24 (left: 24)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 1 4 7'}
+1: {'thought': '(1 + 7) * 4 - (1 + 7) = 24', 'steps': '1 + 7 = 8 (left: 1 4 8)\n4 * 8 = 32 (left: 1 32)\n32 - 1 = 31 (left: 31)\n31 - 7 = 24 (left: 24)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 97/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 1 10 13'}
+1: {'thought': '(13 - 10) * (1 + 1) * 4 = 24', 'steps': '13 - 10 = 3 (left: 1 1 3)\n1 + 1 = 2 (left: 2 3)\n3 * 8 = 24 (left: 24)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '1 1 10 13'}
+1: {'thought': '(13 - 10) * (1 + 1) * 4 = 24', 'steps': '13 - 10 = 3 (left: 1 1 3)\n1 + 1 = 2 (left: 2 3)\n3 * 8 = 24 (left: 24)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 98/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '4 6 6 6'}
+1: {'thought': '(6 + 6) * (4 - 2) = 24', 'steps': '6 + 6 = 12 (left: 4 6 12)\n12 * 2 = 24 (left: 4 24)\n24 * 1 = 24 (left: 24)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '4 6 6 6'}
+1: {'thought': '(6 + 6) * (4 - 2) = 24', 'steps': '6 + 6 = 12 (left: 4 6 12)\n12 * 2 = 24 (left: 4 24)\n24 * 1 = 24 (left: 24)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Solving problem 99/100
+===============================
+
+Step 0
+========================
+Action: cot
+Nodes: 0
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '5 5 7 7'}
+1: {'thought': '((7 * 5) - 7 - 5) + 1 = 24', 'steps': '7 * 5 = 35 (left: 5 7 35)\n35 - 7 = 28 (left: 5 28)\n28 - 5 = 23 (left: 23)\n23 + 1 = 24 (left: 24)'}
+Edges:
+(0, 1): {}
+
+
+Step 1
+========================
+Action: groundtruth
+Nodes: 1
+Explanation: 
+
+
+Graph state:
+------------------------
+Nodes:
+0: {'thought': '5 5 7 7'}
+1: {'thought': '((7 * 5) - 7 - 5) + 1 = 24', 'steps': '7 * 5 = 35 (left: 5 7 35)\n35 - 7 = 28 (left: 5 28)\n28 - 5 = 23 (left: 23)\n23 + 1 = 24 (left: 24)', 'matches_ground_truth': False}
+Edges:
+(0, 1): {}
+
+Result: failure
+===============================
+Summary
+===============================
+Successes: 3
+Failures: 97
+--Return--
+> /home/pg519/reasoning-agent/src/main.py(120)run()->None
+-> breakpoint()
+(Pdb) Traceback (most recent call last):
+  File "/home/pg519/reasoning-agent/src/main.py", line 151, in <module>
+    run(args, data)
+  File "/home/pg519/anaconda3/envs/got/lib/python3.11/bdb.py", line 94, in trace_dispatch
+    return self.dispatch_return(frame, arg)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/pg519/anaconda3/envs/got/lib/python3.11/bdb.py", line 156, in dispatch_return
+    if self.quitting: raise BdbQuit
+                      ^^^^^^^^^^^^^
+bdb.BdbQuit

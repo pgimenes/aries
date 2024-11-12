@@ -163,8 +163,8 @@ def run(args, data):
                     itr += 1
                     attempts = 1
                 except Exception as exc:
-                    attempts += 1
                     print(f"[{attempts}/5] Action {action['operation']} failed on nodes {action['nodes']}, trying again. Error: {exc}")
+                    attempts += 1
                     
             if done:
                 print(f"Result: success")
@@ -215,7 +215,7 @@ def argparser():
     parser.add_argument(
         "--model",
         type=str,
-        default="anthropic/claude-3-5-haiku",
+        default="openai/gpt-4o",
     )
     parser.add_argument(
         "--max_iterations",

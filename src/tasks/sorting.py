@@ -338,7 +338,7 @@ groundtruth
 </next_action>
 
 <nodes>
-Nodes: [5]
+[5]
 </nodes>
 
 <explanation>
@@ -351,6 +351,13 @@ We are continuing the strategy outlined in step 1. Currently, the list in node 0
 examples = "\n".join(minimal_examples)
 
 additional_instructions = """- Only two nodes can be aggregated at a time, so if there are more than two nodes to aggregate, the aggregation must be done following a tree reduction strategy. E.g. if there are 4 nodes to aggregate, aggregate nodes 1 and 2, then aggregate nodes 3 and 4, and finally aggregate the results of the previous aggregations."""
+
+PARSE_OUT_DICT = {
+    "Output:": "",
+    "json": "",
+    "`": "",
+    "\n": "",
+}
 
 # Implementation
 
@@ -472,10 +479,12 @@ def split(
                 input=graph_node["thought"]
             ), 
             model=model
-        )
+        )[0]
         
         # Parse the result
-        as_dict = ast.literal_eval(out[0].replace("\n", "").replace("Output:", ""))
+        for k, v in PARSE_OUT_DICT.items():
+            out = out.replace(k, v)
+        as_dict = ast.literal_eval(out)
 
         # 2. Update the graph
         for k, v in as_dict.items():
@@ -515,14 +524,16 @@ def sort(
         # 1. Send the prompt
         node_idx = int(node)
         graph_node = graph.nodes[node_idx]
-        out = llm(sort_prompt.format(input=graph_node["thought"]), model=model)
-        # out = [ast.literal_eval(graph_node["thought"])]
+        out = llm(sort_prompt.format(input=graph_node["thought"]), model=model)[0]
+        
+        for k, v in PARSE_OUT_DICT.items():
+            out = out.replace(k, v)
         
         # 2. Update the graph
         idx = max(list(graph.nodes)) + 1
         graph.add_node(
             idx, 
-            thought=out[0].replace(f"Output:", ""), 
+            thought=out, 
             score=None,
             original = graph_node["thought"],
         )
@@ -580,10 +591,10 @@ def refine(
                 incorrectly_sorted=graph_node["thought"]
             )
 
-            out = llm(prompt, model=model)
+            output = llm(prompt, model=model)[0]
 
-            # Find reason and output
-            output = out[0].split("Output: ")[-1]
+            for k, v in PARSE_OUT_DICT.items():
+                output = output.replace(k, v)
 
         # Update the graph
         idx = max(list(graph.nodes)) + 1
@@ -714,7 +725,10 @@ def aggregate(
             input2=graph.nodes[int(nodes[1])]["thought"]
         ),
         model=model
-    )
+    )[0]
+
+    for k, v in PARSE_OUT_DICT.items():
+        out = out.replace(k, v)
     
     # 2. Update the graph
     if isinstance(graph.nodes[int(nodes[0])]["thought"], list):
@@ -732,7 +746,7 @@ def aggregate(
     idx = max(list(graph.nodes)) + 1
     graph.add_node(
         idx, 
-        thought=out[0],
+        thought=out,
         score=None,
         original = combined_list,
     )
@@ -868,14 +882,17 @@ def cot(
         # 1. Send the prompt
         node_idx = int(node)
         graph_node = graph.nodes[node_idx]
-        out = llm(sort_cot_prompt.format(input=graph_node["thought"]), model=model)
-        output = out[0].split("Output: ")[-1]
+        out = llm(sort_cot_prompt.format(input=graph_node["thought"]), model=model)[0]
+        
+        # Parse the result
+        for k, v in PARSE_OUT_DICT.items():
+            out = out.replace(k, v)
         
         # 2. Update the graph
         idx = max(list(graph.nodes)) + 1
         graph.add_node(
             idx, 
-            thought=output, 
+            thought=out, 
             score=None,
             original = graph_node["thought"],
         )
