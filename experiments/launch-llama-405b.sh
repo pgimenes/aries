@@ -17,8 +17,7 @@ tmux new-session -d -s sorting32-got "conda deactivate; conda activate sglang; c
                                 --got_aggregate_attempts 10 \
                                 --got_refine_attempts 10 \
                                 &> experiments/logs/llama-3.1-405b/sorting32-got.log"
-tmux new-session -d -s sorting32-llm "conda deactivate; conda activate sglang; cd reasoning-agent; \
-                                python -u src/main.py \
+tmux new-session -d -s sorting32-llm "conda deactivate; conda activate sglang; cd reasoning-agent; python -u src/main.py \
                                 --task sorting32 \
                                 --agent llm \
                                 --max_iterations 23 \
