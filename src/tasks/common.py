@@ -10,6 +10,7 @@ def get_parent_nodes(graph, node):
 def common_keepbest(
     graph, 
     nodes,
+    model = "",
 ):
     min_score = 1000000
     best_node_idx = nodes[0] # if all nodes have the same score, keep the first one
@@ -20,7 +21,6 @@ def common_keepbest(
     
     if new_idx in graph.nodes:
         raise ValueError(f"new_idx {new_idx} already exists in graph")
-
 
     # Find node with highest score
     for idx, node in enumerate(nodes):
@@ -72,10 +72,10 @@ def common_keepbest(
 # ToT
 
 def _common_tot_schedule(
-        width: int,
-        depth: int,
-        generate_action: str = "generate",
-        refine_action: str = "refine",
+    width: int,
+    depth: int,
+    generate_action: str = "generate",
+    refine_action: str = "refine",
 ) -> int:
     actions = []
     action_nodes = []

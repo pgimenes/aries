@@ -1,7 +1,12 @@
 import os
 import openai
+from openai import OpenAI
+from os import getenv
 import backoff 
 import numpy as np
+
+# AZURE
+# ================================================
 
 # openai.api_type = "azure"
 # openai.api_version = "2024-10-01-preview"
@@ -17,9 +22,20 @@ import numpy as np
 #     print("Warning: OPENAI_API_BASE is set to {}".format(api_base))
 #     openai.api_base = api_base
 
-import openai
-client = openai.Client(
-    base_url="http://127.0.0.1:30000/v1", api_key="EMPTY")
+# Local hosting
+# ================================================
+
+# import openai
+# client = openai.Client(
+#     base_url="http://127.0.0.1:30000/v1", api_key="EMPTY")
+
+# OpenRouter
+# ================================================
+
+client = OpenAI(
+  base_url="https://openrouter.ai/api/v1",
+  api_key=getenv("OPENROUTER_API_KEY"),
+)
 
 def get_proposal_perplexities(res):
     interm = []
@@ -38,13 +54,11 @@ def get_proposal_perplexities(res):
 
 # @backoff.on_exception(backoff.expo, openai.error.OpenAIError)
 def completions_with_backoff(**kwargs):
-    # kwargs["engine"] = kwargs.pop("model")
-    # kwargs["logprobs"] = True
     return client.chat.completions.create(**kwargs)
 
 def llm(
     prompt,
-    model="gpt-4", 
+    model=None, 
     temperature=1, 
     max_tokens=1000, 
     n=1, 
@@ -57,7 +71,14 @@ def llm(
     while n > 0:
         cnt = min(n, 20)
         n -= cnt
-        res = completions_with_backoff(model=model, messages=messages, temperature=temperature, max_tokens=max_tokens, n=cnt, stop=stop)
+        res = completions_with_backoff(
+            model=model, 
+            messages=messages, 
+            temperature=temperature, 
+            max_tokens=max_tokens, 
+            n=cnt, 
+            stop=stop,
+        )
 
         try:
             msg = [choice.message.content for choice in res.choices]

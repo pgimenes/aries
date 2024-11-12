@@ -35,7 +35,7 @@ def get_agent(agent, env, task, **kwargs):
         return ToTAgent(
             env = env,
             task = task,
-            model = "gpt-4",
+            model = args.model,
             problem_definition = task.problem_definition,
             actions = task.actions,
             width = kwargs.get("tot_width"),
@@ -46,7 +46,7 @@ def get_agent(agent, env, task, **kwargs):
         return GoTAgent(
             env=env,
             task = task,
-            model = "gpt-4",
+            model = args.model,
             problem_definition = task.problem_definition,
             actions = task.actions,
             branches=kwargs.get("got_branches"),
@@ -61,7 +61,7 @@ def get_agent(agent, env, task, **kwargs):
         return LLMAgent(
             env=env,
             task = task,
-            model = "gpt-4",
+            model = args.model,
             problem_definition = task.problem_definition,
             actions = task.actions,
             max_iterations = kwargs.get("max_iterations", 25),
@@ -107,6 +107,7 @@ def run(args, data):
             env = GoTEnv(
                 problem=problem,
                 task= taskname,
+                model=args.model,
             )
             obs, _ = env.reset()
             
@@ -154,7 +155,10 @@ def run(args, data):
 
                 try:
                     obs, reward, terminated, truncated, info = env.step(action)
-                    agent.action_history.append(action)
+
+                    if isinstance(agent, LLMAgent):
+                        agent.action_history.append(action)
+
                     done = terminated or truncated
                     itr += 1
                     attempts = 1
@@ -174,7 +178,6 @@ def run(args, data):
             print(f"Error: {e}")
             failures.append(problem)
 
-    # summary
     print(f"===============================")
     print(f"Summary")
     print(f"===============================")
@@ -209,6 +212,11 @@ def argparser():
     )
 
     # LLM Agent
+    parser.add_argument(
+        "--model",
+        type=str,
+        default="anthropic/claude-3-5-haiku",
+    )
     parser.add_argument(
         "--max_iterations",
         type=int,

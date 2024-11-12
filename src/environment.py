@@ -21,6 +21,7 @@ class GoTEnv(gym.Env):
             task: str = "",
             max_graph_size: int = 128,
             node_embedding_size: int = 128,
+            model: str = "",
         ):
 
         self.step_count = 0
@@ -30,6 +31,7 @@ class GoTEnv(gym.Env):
         self.problem = problem
         
         self.task = importlib.import_module(f"tasks.{task}")
+        self.model = model
 
         self.thought_graph = nx.Graph()
         self.thought_graph.add_node(
@@ -121,7 +123,7 @@ class GoTEnv(gym.Env):
         except AttributeError:
             raise ValueError(f"Operation {operation} not found for task {self.task}")
 
-        self.thought_graph, terminate = operator(self.thought_graph, nodes)
+        self.thought_graph, terminate = operator(self.thought_graph, nodes, self.model)
         truncate = False
 
         print("\nGraph state:")
