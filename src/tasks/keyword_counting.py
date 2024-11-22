@@ -9,13 +9,11 @@ from .common import (
 
 from .countries import COUNTRIES
 
-model = "gpt-4"
-
 problem_definition = "Count the frequency of how many times each country is explicitly named in the input text."
 
 actions = {
     "split": {
-        "description": "Split the input text into individual sentences to decompose the problem. ",
+        "description": "Split the input text into paragraphs to decompose the problem. ",
         "preconditions": "",
         "effects": "This creates new nodes connected to the original node.",
     },
@@ -25,20 +23,20 @@ actions = {
         "effects": "This creates a new node connected to the original node.",
     },
     "aggregate": {
-        "description": "Merge the frequency counts of the selected nodes into a single count.  ",
-        "preconditions": "You can only aggregate two nodes at a time.",
-        "effects": "This action creates a new node connected to the two selected nodes.",
-    },
-    "refine": {
-        "description": "Refine a count by fixing any existing mistakes.",
-        "preconditions": "This action should only be called on nodes that have already been scored and contain mistakes (i.e. non-zero scores).",
-        "effects": "This creates a new node connected to the original node.",
-    },
-    "score": {
-        "description": "Count the number of mistakes in the node.",
+        "description": "Merge the frequency counts of the selected nodes into a single count.",
         "preconditions": "",
-        "effects": "The error count is annotated in the metadata of each node, and no new nodes are created.",
+        "effects": "This action creates a new node connected to the selected nodes.",
     },
+    # "refine": {
+    #     "description": "Refine a count by fixing any existing mistakes.",
+    #     "preconditions": "This action should only be called on nodes that have already been scored and contain mistakes (i.e. non-zero scores).",
+    #     "effects": "This creates a new node connected to the original node.",
+    # },
+    # "score": {
+    #     "description": "Count the number of mistakes in the node.",
+    #     "preconditions": "",
+    #     "effects": "The error count is annotated in the metadata of each node, and no new nodes are created.",
+    # },
     "keepbest": {
         "description": "Out of the selected nodes, keep the one with the highest score, and delete the rest.",
         "preconditions": "The selected nodes must have been scored.",
@@ -64,8 +62,8 @@ Nodes:
 Edges:
 
 OUTPUT:
-Analysis: 
 
+<analysis>
 A. Action history: No actions have been taken yet. 
 
 B. Graph state: The graph currently has 1 node and 0 edges. Node 0 contains the initial problem. 
@@ -76,17 +74,87 @@ D. Next action options
     1. Attempt to count the keywords on the entire text. This may be effective if the text is not too long.
 
     2. Decompose the text into sentences to make it easier to count the keywords. This may be effective if the text is too long to count directly.
+</analysis>
 
-Next action: split
-Nodes: [0]
+<next_action>
+split
+</next_action>
 
-Explanation: The text is long and contains multiple sentences. Splitting the text into sentences will make it easier to count the keywords.
+<nodes>
+[0]
+</nodes>
+
+<attempts>
+1   
+</attempts>
+
+<explanation>
+The text is long and contains multiple sentences. Splitting the text into sentences will make it easier to count the keywords.
+</explanation>
 </example>""",
 ]
 
+examples = "\n".join(examples)
+
+# additional_instructions = """- The count action may have a low probability of success. If previous counts were unsuccessful, it is recommended to repeat counting with higher attempt counts to increase the likelihood of finding a correct solution.
+# - If counting is not successful after many attempts, it is recommended to split the text into smaller segments to make counting easier, then aggregate the counts from each segment."""
+
+PARSE_OUT_DICT = {
+    "Output:": "",
+    "json": "",
+    "`": "",
+    "\n": "",
+}
+
 # Implementation
 
-split_prompt = """<Instruction> Split the following input text into individual sentences.
+split2_prompt = """<Instruction> Split the following input text into 2 paragraphs of approximately same length.
+Only output the final 4 paragraphs in the following format without any additional text or thoughts:
+{{
+    "Paragraph 1": "Some paragraph text ...",
+    "Paragraph 2": "Some paragraph text ...",
+}} </Instruction>
+
+<Example>
+Input:
+Journeying westward, she admired the art in Italy and sipped coffee in France. The music of Spain and the history of Greece deepened her love for Europe. The Nordic beauty of Norway, Sweden, Finland, and Denmark took her breath away. She danced in Ireland, explored castles in Scotland, and marveled at the architecture in Germany and Russia. Italy, Norway, Sweden and Germany will always stay her favourite destinations to visit.
+Output: 
+{{
+    "Paragraph 1": "Journeying westward, she admired the art in Italy and sipped coffee in France. The music of Spain and the history of Greece deepened her love for Europe. The Nordic beauty of Norway, Sweden, Finland, and Denmark took her breath away.",
+    "Paragraph 2": "She danced in Ireland, explored castles in Scotland, and marveled at the architecture in Germany and Russia. Italy, Norway, Sweden and Germany will always stay her favourite destinations to visit.",
+}}
+</Example>
+
+Input:
+{input}
+"""
+
+split4_prompt = """<Instruction> Split the following input text into 4 paragraphs of approximately same length.
+Only output the final 4 paragraphs in the following format without any additional text or thoughts:
+{{
+    "Paragraph 1": "Some paragraph text ...",
+    "Paragraph 2": "Some paragraph text ...",
+    "Paragraph 3": "Some paragraph text ...",
+    "Paragraph 4": "Some paragraph text ..."
+}} </Instruction>
+
+<Example>
+Input:
+Journeying westward, she admired the art in Italy and sipped coffee in France. The music of Spain and the history of Greece deepened her love for Europe. The Nordic beauty of Norway, Sweden, Finland, and Denmark took her breath away. She danced in Ireland, explored castles in Scotland, and marveled at the architecture in Germany and Russia. Italy, Norway, Sweden and Germany will always stay her favourite destinations to visit.
+Output: 
+{{
+    "Paragraph 1": "Journeying westward, she admired the art in Italy and sipped coffee in France. ",
+    "Paragraph 2": "The music of Spain and the history of Greece deepened her love for Europe. The Nordic beauty of Norway, Sweden, Finland, and Denmark took her breath away.",
+    "Paragraph 3": "She danced in Ireland, explored castles in Scotland, and marveled at the architecture in Germany and Russia.",
+    "Paragraph 4": "Italy, Norway, Sweden and Germany will always stay her favourite destinations to visit."
+}}
+</Example>
+
+Input:
+{input}
+"""
+
+splitx_prompt = """<Instruction> Split the following input text into individual sentences.
 Output each sentence in the following format without any additional text or thoughts:
 {{
     "Sentence 1": "Some sentence text ...",
@@ -116,11 +184,12 @@ Output:
 def split(
     graph, 
     nodes,
+    model = "",
 ):
     for node in nodes:
         node_idx = int(node)
         graph_node = graph.nodes[int(node)]
-        out = llm(split_prompt.format(input=graph.nodes[int(node)]["thought"]), model=model)[0]
+        out = llm(splitx_prompt.format(input=graph.nodes[int(node)]["thought"]), model=model)[0]
 
         as_dict = ast.literal_eval(out)
 
@@ -196,7 +265,9 @@ Output:
 def count(
     graph, 
     nodes,
+    model = "",
 ):
+    counted_nodes = []
     for node in nodes:
         node_idx = int(node)
         out = llm(count_prompt.format(input=graph.nodes[int(node)]["thought"]), model=model)[0]
@@ -210,6 +281,10 @@ def count(
             original=graph.nodes[int(node)]["thought"],
         )
         graph.add_edge(node_idx, idx)
+        counted_nodes.append(idx)
+
+    # Score
+    graph, _ = score(graph, counted_nodes, model=model)
 
     return graph, False
 
@@ -315,7 +390,9 @@ Reason:"""
 def refine(
     graph, 
     nodes,
+    model = "",
 ):
+    refined_nodes = []
     for node in nodes:
         node_idx = int(node)
         graph_node = graph.nodes[node_idx]
@@ -345,18 +422,15 @@ def refine(
             original=graph.nodes[node_idx]["original"],
         )
         graph.add_edge(node_idx, idx)
+        refined_nodes.append(idx)
+
+    # Score the refinement
+    graph, _ = score(graph, refined_nodes, model=model)
 
     return graph, False
 
 with open("data/keyword_counting.csv", "r") as f:
     data = pd.read_csv(f)
-
-def get_country_list(text):
-    for i in data.iterrows():
-        if i[1]["Text"] == text:
-            clist = i[1]["Countries"]
-            clist = clist.split("[")[1].split("]")[0].split(", ")
-            return clist
         
 def get_ground_truth(text):
     count = {}
@@ -369,6 +443,7 @@ def get_ground_truth(text):
 def score(
     graph, 
     nodes,
+    model = "",
 ):
     for node in nodes:
         graph_node = graph.nodes[int(node)]
@@ -382,23 +457,35 @@ def score(
             real_count = get_ground_truth(original)
             error = 0
 
+            # scoring feedback
+            feedback = {
+                "missing_elements": 0,
+                "extra_elements": 0,
+            }
+
             for country in COUNTRIES:
-                err = abs(
-                    real_count.get(
-                        country,
-                        0,
-                    ) - graph.nodes[int(node)]["thought"].get(
-                        country, 
-                        0,
-                    )
+                diff = real_count.get(
+                    country,
+                    0,
+                ) - graph.nodes[int(node)]["thought"].get(
+                    country, 
+                    0,
                 )
-                error += err
+
+                if diff > 0:
+                    feedback["missing_elements"] += abs(diff)
+                if diff < 0:
+                    feedback["extra_elements"] += abs(diff)
+                
+                error += abs(diff)
         
         # Assign a large error if scoring fails
         except:
             errors = 1000000
 
         graph_node["score"] = error
+        if error > 0:
+            graph_node["feedback"] = feedback
             
     return graph, False
 
@@ -412,43 +499,62 @@ def get_parent_nodes(graph, node):
 def keepbest(
     graph, 
     nodes,
+    model = "",
 ):
-    return common_keepbest(graph, nodes)
+    # Score all nodes first
+    graph, _ = score(graph, nodes, model=model)
+    return common_keepbest(graph, nodes, model)
 
 def aggregate(
     graph, 
     nodes,
+    model="",
 ):
-    node1 = graph.nodes[int(nodes[0])]
-    thought1 = node1["thought"]
+    # Initialize merged thoughts and score
+    merged_thought = {}
+    merged_score = 0
+    merged_original = []
 
-    node2 = graph.nodes[int(nodes[1])]
-    thought2 = node2["thought"]
+    # Iterate over all specified nodes to merge their thoughts and scores
+    for node_id in nodes:
+        node = graph.nodes[int(node_id)]
+        thought = node["thought"]
+        merged_original.append(node["original"])
 
-    # merge the two dictionaries
-    thought = {k: thought1.get(k, 0) + thought2.get(k, 0) for k in set(thought1) | set(thought2)}
+        # Merge thoughts by summing values
+        for k in thought:
+            merged_thought[k] = merged_thought.get(k, 0) + thought.get(k, 0)
 
-    idx = max(list(graph.nodes)) + 1
+        # Aggregate score if available
+        if node.get("score") is not None:
+            merged_score += node["score"]
+        else:
+            merged_score = None  # Set to None if any node lacks a score
 
-    if node1.get("score", None) is None or node2.get("score", None) is None:
-        newscore = None
-    else:
-        newscore = node1["score"] + node2["score"]
+    # Generate new node index
+    idx = max(graph.nodes) + 1
 
+    # Add new aggregated node
     graph.add_node(
         idx,
-        thought=thought,
-        score=newscore,
-        original=f"{node1['original']} {node2['original']}",
+        thought=merged_thought,
+        score=merged_score,
+        original=" ".join(merged_original),
     )
-    graph.add_edge(int(nodes[0]), idx)
-    graph.add_edge(int(nodes[1]), idx)
+
+    # Add edges from all specified nodes to the new aggregated node
+    for node_id in nodes:
+        graph.add_edge(int(node_id), idx)
+
+    # Score the aggregation
+    graph, _ = score(graph, [idx], model=model)
 
     return graph, False
 
 def groundtruth(
     graph, 
     nodes,
+    model = "",
 ):
     original = graph.nodes[0]["thought"]
 
@@ -651,6 +757,7 @@ Paragraphs:"""
 def cot(
     graph, 
     nodes,
+    model = "",
 ):
     for node in nodes:
         node_idx = int(node)

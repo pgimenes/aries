@@ -14,7 +14,7 @@ def excepthook(exc_type, exc_value, exc_traceback):
     pdb.post_mortem(exc_traceback)
 
 # Set the custom exception hook
-sys.excepthook = excepthook
+# sys.excepthook = excepthook
 
 num_episodes = 1
 
@@ -70,6 +70,7 @@ def get_agent(agent, env, task, **kwargs):
 def run(args, data):
     successes = []
     failures = []
+    scores = []
 
     if args.task != "crosswords":
         iterator = data.iterrows()
@@ -156,6 +157,7 @@ def run(args, data):
                 try:
                     obs, reward, terminated, truncated, info = env.step(action)
 
+                    # Only update the action history if it ran successfuly
                     if isinstance(agent, LLMAgent):
                         agent.action_history.append(action)
 
@@ -163,12 +165,21 @@ def run(args, data):
                     itr += 1
                     attempts = 1
                 except Exception as exc:
-                    print(f"[{attempts}/5] Action {action['operation']} failed on nodes {action['nodes']}, trying again. Error: {exc}")
-                    attempts += 1
-                    
+                    # LLMAgent can try to recover by fetching another action...
+                    if isinstance(agent, LLMAgent):
+                        print(f"[{attempts}/5] Action {action['operation']} failed on nodes {action['nodes']}, trying again. Error: {exc}")
+                        attempts += 1
+
+                    # Other agents need to give up
+                    else:
+                        break
+
             if done:
                 print(f"Result: success")
                 successes.append(problem)
+                
+                if info.get("score", None) is not None:
+                    scores.append(info["score"])
             else:
                 print(f"Result: failure")
                 failures.append(problem)
@@ -184,8 +195,8 @@ def run(args, data):
 
     print(f"Successes: {len(successes)}")
     print(f"Failures: {len(failures)}")
-
-    breakpoint()
+    avg_score = sum(scores) / len(scores) if len(scores) > 0 else 1000
+    print(f"Average score: {avg_score}")
 
 def argparser():
     # Read args from command line
@@ -241,13 +252,11 @@ def argparser():
     )
     parser.add_argument(
         "--got_post_aggregate_keepbest", 
-        type=bool, 
-        default=True,
+        action="store_true",
     )
     parser.add_argument(
         "--got_post_aggregate_refine", 
-        type=bool, 
-        default=True,
+        action="store_true",
     )
     parser.add_argument(
         "--got_refine_attempts", 

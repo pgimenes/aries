@@ -107,7 +107,11 @@ class GoTEnv(gym.Env):
 
         return observation, info
     
-    def step(self, action):
+    def step(
+        self, 
+        action,
+        max_tries: int = 5,
+    ):
         operation = action["operation"]
         nodes = action["nodes"]
         explanation = action.get("explanation", "")
@@ -118,23 +122,37 @@ class GoTEnv(gym.Env):
         print(f"Nodes: {nodes}")
         print(f"Explanation: {explanation}\n")
 
-        try:
-            operator = getattr(self.task, operation)
-        except AttributeError:
-            raise ValueError(f"Operation {operation} not found for task {self.task}")
+        attempts = 1
+        while attempts <= max_tries:
+            try:
+                operator = getattr(self.task, operation, None)
+                if operator is None:
+                    raise ValueError(f"Operation {operation} not found for task {self.task}")
 
-        self.thought_graph, terminate = operator(self.thought_graph, nodes, self.model)
-        truncate = False
+                self.thought_graph, terminate = operator(self.thought_graph, nodes, self.model)
+                truncate = False
 
-        print("\nGraph state:")
-        print(f"------------------------")
-        print(self.thought_graph_repr())
+                print("\nGraph state:")
+                print(f"------------------------")
+                print(self.thought_graph_repr())
 
-        # An environment is completed if there is a ground truth proposal with a score of 1
-        reward = 1 if terminate else 0  # the agent is only reached at the end of the episode
-        observation = self._get_obs()
-        info = self._get_info()
+                # An environment is completed if there is a ground truth proposal with a score of 1
+                reward = 1 if terminate else 0  # the agent is only reached at the end of the episode
+                observation = self._get_obs()
+                info = self._get_info()
 
-        self.step_count += 1
+                self.step_count += 1
+
+                if operation == "groundtruth":
+                    score = self.thought_graph.nodes[int(nodes[0])]["score"]
+                else:
+                    score = None
+
+                info["score"] = score
+                break
+            except:
+                print(f"[{attempts}/{max_tries}] Action {operation} failed on nodes {nodes}, trying again.")
+                attempts += 1
+                continue
 
         return observation, reward, terminate, truncate, info
