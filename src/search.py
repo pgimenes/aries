@@ -6,15 +6,25 @@ import argparse
 
 from tasks.common import _common_got_schedule
 
-def count_queries(actions, action_nodes):
+import sys, pdb, traceback
+
+def excepthook(exc_type, exc_value, exc_traceback):
+    traceback.print_exception(exc_type, exc_value, exc_traceback)
+    print("\nEntering debugger...")
+    pdb.post_mortem(exc_traceback)
+
+# Set the custom exception hook
+# sys.excepthook = excepthook
+
+def count_queries(actions, action_nodes, action_attempts):
     query_count = 0
     for idx, action in enumerate(actions):
         if action in ["score", "keepbest", "groundtruth"]:
             continue
         elif action in ["sort", "refine", "split"]:
-            query_count += len(action_nodes[idx])
+            query_count += len(action_nodes[idx]) * action_attempts[idx]
         elif action in ["aggregate"]:
-            query_count += len(action_nodes[idx]) // 2
+            query_count += action_attempts[idx]
         else:
             raise ValueError(f"Unknown action: {action}")
     
@@ -26,17 +36,53 @@ def objective(trial):
     os.makedirs(directory, exist_ok=True)
     score_file_path = f'{directory}/trial_{trial.number}'
 
+    search_space = {
+        "branches": [2, 4, 8, 16],
+        "got_post_aggregate_keepbest": [True, False],
+        "got_post_aggregate_refine": [True, False],
+        "got_generate_attempts": [1, 5, 10, 15, 20],
+        "got_aggregate_attempts": [1, 5, 10, 15, 20],
+        "got_refine_attempts": [1, 5, 10, 15, 20],
+    }
+
+    # Update search space based on task
+    if task in ["sorting32", "set_intersection32"]:
+        search_space["branches"] = [2]
+    elif task in ["sorting64", "set_intersection64"]:
+        search_space["branches"] = [4]
+    elif task in ["sorting128", "set_intersection128"]:
+        search_space["branches"] = [8]
+    elif task == "keyword_counting":
+        search_space["branches"] = [16]
+        search_space["got_aggregate_attempts"] = [1]
+    else:
+        raise ValueError(f"Unknown task: {task}")
+
     # Sample the parameters
-    got_branches = branches
-    got_post_aggregate_keepbest = trial.suggest_categorical('got_post_aggregate_keepbest', [True, False])  # True or False
-    got_post_aggregate_refine = trial.suggest_categorical('got_post_aggregate_refine', [True, False])  # True or False
-    
-    got_generate_attempts = trial.suggest_categorical('got_generate_attempts', [1, 5, 10, 15, 20])
-    got_aggregate_attempts = trial.suggest_categorical('got_aggregate_attempts', [1, 5, 10, 15, 20])
-    got_refine_attempts = trial.suggest_categorical('got_refine_attempts', [1, 5, 10, 15, 20])
+    got_branches = trial.suggest_categorical("branches", search_space["branches"])
+    got_post_aggregate_keepbest = trial.suggest_categorical("got_post_aggregate_keepbest", search_space["got_post_aggregate_keepbest"])
+    got_post_aggregate_refine = trial.suggest_categorical("got_post_aggregate_refine", search_space["got_post_aggregate_refine"])
+    got_generate_attempts = trial.suggest_categorical("got_generate_attempts", search_space["got_generate_attempts"])
+    got_aggregate_attempts = trial.suggest_categorical("got_aggregate_attempts", search_space["got_aggregate_attempts"])
+    got_refine_attempts = trial.suggest_categorical("got_refine_attempts", search_space["got_refine_attempts"])
 
     if not (got_post_aggregate_keepbest or got_post_aggregate_refine):
         raise optuna.TrialPruned("At least one of post_aggregate_keepbest or post_aggregate_refine must be True.")
+
+    # Count the queries required according to the parameters
+    actions, action_nodes, action_attempts = _common_got_schedule(
+        branches = got_branches,
+        generate_action = "sort",
+        generate_attempts = got_generate_attempts,
+        aggregate_attempts = got_aggregate_attempts,
+        post_aggregate_keepbest = got_post_aggregate_keepbest,
+        post_aggregate_refine = got_post_aggregate_refine,
+        refine_attempts = got_refine_attempts,
+    )
+    query_count = count_queries(actions, action_nodes, action_attempts)
+
+    if query_count > 300:
+        raise optuna.TrialPruned("Too many queries.")
 
     # Prepare the command with the selected parameters
     command = [
@@ -54,18 +100,6 @@ def objective(trial):
         command.append('--got_post_aggregate_keepbest')
     if got_post_aggregate_refine:
         command.append('--got_post_aggregate_refine')
-
-    # Count the queries required according to the parameters
-    actions, action_nodes = _common_got_schedule(
-        branches = got_branches,
-        generate_action = "sort",
-        generate_attempts = got_generate_attempts,
-        aggregate_attempts = got_aggregate_attempts,
-        post_aggregate_keepbest = got_post_aggregate_keepbest,
-        post_aggregate_refine = got_post_aggregate_refine,
-        refine_attempts = got_refine_attempts,
-    )
-    query_count = count_queries(actions, action_nodes)
 
     # Dump the parameters
     with open(f"{score_file_path}-spec.log", 'w') as log_file:
@@ -99,7 +133,7 @@ def objective(trial):
         log_file.write(f"score: {score}\n")
         log_file.write(f"cost: {cost}\n")
 
-    return cost
+    return score, query_count
 
 # Create an Optuna study to optimize the objective function
 if __name__ == "__main__":
@@ -120,33 +154,22 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     global task
-    global branches
     global alpha
 
     task = args.task
     alpha = args.alpha
-
-    if task in ["sorting32", "set_intersection32"]:
-        branches = 2
-    elif task in ["sorting64", "set_intersection64"]:
-        branches = 4
-    elif task in ["sorting128", "set_intersection128"]:
-        branches = 8
-    elif task == "keyword_counting":
-        branches = 16
-    else:
-        raise ValueError(f"Unknown task: {task}")
     
     sampler = optuna.samplers.TPESampler()
     study = optuna.create_study(
-        direction='minimize',
+        directions=['minimize', 'minimize'],
         sampler=sampler,
     )
     study.optimize(objective, n_trials=100)  # Number of trials to run in the random search
 
     # Print the best trial and its score
-    best_trial = study.best_trial
+    trials = study.best_trials
+    breakpoint()
 
-    print(f"Best trial: {best_trial.number}")
-    print(f"Best parameters: {best_trial.params}")
-    print(f"Best score: {best_trial.value}")
+    # print(f"Best trial: {best_trial.number}")
+    # print(f"Best parameters: {best_trial.params}")
+    # print(f"Best score: {best_trial.value}")

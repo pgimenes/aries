@@ -1,9 +1,10 @@
 import os
 import openai
-from openai import OpenAI
+from openai import OpenAI, AsyncOpenAI
 from os import getenv
 import backoff 
 import numpy as np
+import asyncio
 
 # AZURE
 # ================================================
@@ -25,9 +26,15 @@ import numpy as np
 # Local hosting
 # ================================================
 
-import openai
-client = openai.Client(
-    base_url="http://127.0.0.1:30000/v1", api_key="EMPTY")
+# import openai
+client = OpenAI(
+    base_url="http://127.0.0.1:30000/v1", 
+    api_key="EMPTY",
+)
+async_client = AsyncOpenAI(
+    base_url="http://127.0.0.1:30000/v1", 
+    api_key="EMPTY",
+)
 
 # OpenRouter
 # ================================================
@@ -52,11 +59,52 @@ def get_proposal_perplexities(res):
 
     return proposal_ppl
 
-# @backoff.on_exception(backoff.expo, openai.error.OpenAIError)
 def completions_with_backoff(**kwargs):
     return client.chat.completions.create(**kwargs)
 
 def llm(
+    prompt,
+    model=None, 
+    temperature=1, 
+    max_tokens=1000000, 
+    n=1, 
+    stop=None, 
+    return_ppl=False
+) -> list:
+    messages = [{"role": "user", "content": prompt}]    
+    outputs = []
+
+    while n > 0:
+        cnt = min(n, 20)
+        n -= cnt
+        res = completions_with_backoff(
+            model=model, 
+            messages=messages, 
+            temperature=temperature, 
+            max_tokens=max_tokens, 
+            n=cnt, 
+            stop=stop,
+        )
+
+        try:
+            msg = [choice.message.content for choice in res.choices]
+        except:
+            raise ValueError(f"Failed to get messages from response: {res}")
+
+        outputs.extend(msg)
+        
+        if return_ppl:
+            proposals = msg[0].split("\n")
+            proposal_ppl = get_proposal_perplexities(res)
+            # assert len(proposals) == len(proposal_ppl), f"Found {len(proposals)} proposals but {len(proposal_ppl)} perplexities"
+            proposal_ppl = list(zip(proposals, proposal_ppl))
+
+    if return_ppl:
+        return outputs, proposal_ppl
+    else:
+        return outputs
+
+async def async_llm(
     prompt,
     model=None, 
     temperature=1, 
@@ -71,7 +119,7 @@ def llm(
     while n > 0:
         cnt = min(n, 20)
         n -= cnt
-        res = completions_with_backoff(
+        res = await async_client.chat.completions.create(
             model=model, 
             messages=messages, 
             temperature=temperature, 

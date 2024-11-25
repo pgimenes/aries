@@ -1,10 +1,12 @@
-from llm import llm
+from llm import llm, async_llm
 import ast
 from .common import (
     _common_tot_schedule, 
     _common_got_schedule, 
     common_keepbest, 
+    PARSE_OUT_DICT,
 )
+import asyncio
 
 problem_definition = "Sort a list of numbers in ascending order."
 
@@ -352,13 +354,6 @@ examples = "\n".join(minimal_examples)
 
 additional_instructions = """- Only two nodes can be aggregated at a time, so if there are more than two nodes to aggregate, the aggregation must be done following a tree reduction strategy. E.g. if there are 4 nodes to aggregate, aggregate nodes 1 and 2, then aggregate nodes 3 and 4, and finally aggregate the results of the previous aggregations."""
 
-PARSE_OUT_DICT = {
-    "Output:": "",
-    "json": "",
-    "`": "",
-    "\n": "",
-}
-
 # Implementation
 
 splitx = """<Instruction> Split the following list of numbers into 2 lists, the first list should contain the first half of the numbers and the second list the second half of the numbers.
@@ -454,7 +449,10 @@ def split(
     graph, 
     nodes,
     model = "",
+    run_async = False,
+    multiplicity: int = 1,
 ):
+    formatted_prompts = {}
     for node in nodes:
         # 1. Send the prompt
         node_idx = int(node)
@@ -474,13 +472,28 @@ def split(
         else:
             split_prompt = splitx
 
-        out = llm(
-            split_prompt.format(
-                input=graph_node["thought"]
-            ), 
-            model=model
-        )[0]
-        
+        formatted_prompts[node] = split_prompt.format(input=graph_node["thought"])
+
+    if run_async:
+        outs = asyncio.gather(
+            *[
+                async_llm(
+                    formatted_prompts[node], 
+                    model=model
+                ) for node in nodes
+            ],
+        )
+    else:
+        outs = [
+            llm(
+                formatted_prompts[node], 
+                model=model
+            )[0] for node in nodes
+        ]
+
+    for idx, node in enumerate(nodes):
+        out = outs[idx]
+
         # Parse the result
         for k, v in PARSE_OUT_DICT.items():
             out = out.replace(k, v)
@@ -514,22 +527,53 @@ Output: [0, 0, 0, 0, 0, 0, 0, 1, 1, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 4,
 Input: {input}
 Output: """
 
+async def async_sort(
+    graph,
+    nodes,
+    model = "",
+    multiplicity: int = 1,
+):
+    return await asyncio.gather(
+        *[
+            async_llm(
+                sort_prompt.format(input=graph.nodes[int(node)]["thought"]),
+                model=model,
+            ) for node in nodes
+        ],
+    )
+
 def sort(
     graph, 
     nodes,
     model = "",
+    run_async = True,
+    multiplicity: int = 1,
 ):
+    
+    # 1. Get LLM responses
+    if run_async:
+        outs = asyncio.run(async_sort(graph, nodes, model=model))
+        outs = {
+            nodes[i]: outs[i] for i in range(len(nodes))
+        }
+    else:
+        outs = {
+            node: llm(
+                sort_prompt.format(input=graph.nodes[int(node)]["thought"]),
+                model=model,
+            )[0] for node in nodes
+        }
+
+    # 2. Update graph
     sorted_nodes = []
     for node in nodes:
-        # 1. Send the prompt
         node_idx = int(node)
         graph_node = graph.nodes[node_idx]
-        out = llm(sort_prompt.format(input=graph_node["thought"]), model=model)[0]
-        
+
+        out = outs[node][0]
         for k, v in PARSE_OUT_DICT.items():
             out = out.replace(k, v)
         
-        # 2. Update the graph
         idx = max(list(graph.nodes)) + 1
         graph.add_node(
             idx, 
@@ -568,66 +612,102 @@ Input: {input}
 Incorrectly Sorted: {incorrectly_sorted}
 """
 
+async def async_refine(
+    graph,
+    nodes,
+    model = "",
+    multiplicity: int = 1,
+):
+    return await asyncio.gather(
+        *[
+            async_llm(
+                refine_prompt.format(
+                    input=graph.nodes[int(node)]["original"],
+                    incorrectly_sorted=graph.nodes[int(node)]["thought"],
+                ),
+                model=model,
+            ) for node in nodes
+        ],
+    )
+
 def refine(
     graph, 
     nodes,
     model = "",
+    run_async = True,
+    multiplicity: int = 1,
 ):
-    refined_nodes = []
+    # 1. Filter out nodes that are already correct
+    nodes_to_refine = []
+    refined_nodes = {}
     for node in nodes:
         node_idx = int(node)
         graph_node = graph.nodes[node_idx]
         
         # Skip if the node is already correct
         if graph_node.get("score", None) is not None and graph_node["score"] == 0:
-            original = graph_node["original"]
-            output = graph_node["thought"]
-
+            refined_nodes[node] = {
+                "thought": graph_node["thought"],
+                "score": 0,
+                "original": graph_node["original"],
+            }
         else:
-            original = graph_node["original"]
+            nodes_to_refine.append(node)
 
-            prompt = refine_prompt.format(
-                input=original,
-                incorrectly_sorted=graph_node["thought"]
-            )
+    if run_async:
+        outs = asyncio.run(async_refine(graph, nodes_to_refine, model=model))
+        outs = {
+            nodes_to_refine[i]: outs[i] for i in range(len(nodes_to_refine))
+        }
+    else:
+        outs = {
+            node: llm(
+                refine_prompt.format(
+                    input=graph.nodes[int(node)]["original"],
+                    incorrectly_sorted=graph.nodes[int(node)]["thought"],
+                ),
+                model=model,
+            )[0] for node in nodes_to_refine
+        }
+    
+    # 2. Update the graph
+    nodes_to_score = []
+    for node in nodes:
+        if node in nodes_to_refine:
+            original = graph.nodes[int(node)]["original"]
+            output = outs[node][0]
+        else:
+            original, output = refined_nodes[node]["original"], refined_nodes[node]["thought"]
 
-            output = llm(prompt, model=model)[0]
+        for k, v in PARSE_OUT_DICT.items():
+            output = output.replace(k, v)
 
-            for k, v in PARSE_OUT_DICT.items():
-                output = output.replace(k, v)
-
-        # Update the graph
         idx = max(list(graph.nodes)) + 1
         graph.add_node(
             idx,
             thought=output,
-            score=None,
             original=original,
+            score=None,
         )
         graph.add_edge(node_idx, idx)
-        refined_nodes.append(idx)
+        nodes_to_score.append(idx)
 
-    # Score all the refined nodes
-    for node in refined_nodes:
+    # 3. Score all the refined nodes
+    for node in nodes_to_score:
         graph, _ = score(graph, [node], model=model)
 
     return graph, False
-
-
 
 def score(
     graph, 
     nodes,
     model = "",
+    multiplicity: int = 1,
 ):
 
     for node in nodes:
         node_idx = int(node)
         graph_node = graph.nodes[node_idx]
-
-        # Skip scoring if already scored
-        if "score" in graph_node.keys() and graph_node["score"] is not None:
-            continue
         
         feedback = {}
         try:
@@ -686,6 +766,7 @@ def keepbest(
     graph, 
     nodes,
     model = "",
+    multiplicity: int = 1,
 ):
     # Score all non-scored nodes
     graph, _ = score(graph, nodes, model=model)
@@ -710,27 +791,58 @@ Merge the following two lists into one sorted list:
 Merged list:
 """
 
+async def async_aggregate(
+    graph,
+    nodes,
+    model = "",
+    multiplicity: int = 1,
+):
+    return await asyncio.gather(
+        *[
+            async_llm(
+                aggregate_prompt.format(
+                    input1=graph.nodes[int(nodes[0])]["thought"],
+                    input2=graph.nodes[int(nodes[1])]["thought"]
+                ),
+                model=model
+            ) for _ in range(multiplicity)
+        ],
+    )
+
 def aggregate(
     graph, 
     nodes,
     model = "",
+    multiplicity: int = 1,
+    run_async: bool = True,
 ):
     if len(nodes) != 2:
         raise ValueError("aggregate action requires exactly 2 nodes to be selected")
-    
-    # 1. Send the prompt
-    out = llm(
-        aggregate_prompt.format(
-            input1=graph.nodes[int(nodes[0])]["thought"],
-            input2=graph.nodes[int(nodes[1])]["thought"]
-        ),
-        model=model
-    )[0]
 
-    for k, v in PARSE_OUT_DICT.items():
-        out = out.replace(k, v)
+    # 1. Run the aggregate attempts
+    if run_async:
+        outs = asyncio.run(
+            async_aggregate(
+                graph,
+                nodes,
+                model=model,
+                multiplicity=multiplicity,
+            )
+        )
+        outs = [out[0] for out in outs]
     
-    # 2. Update the graph
+    else:
+        outs = [
+            llm(
+                aggregate_prompt.format(
+                    input1=graph.nodes[int(nodes[0])]["thought"],
+                    input2=graph.nodes[int(nodes[1])]["thought"]
+                ),
+                model=model
+            )[0] for _ in range(multiplicity)
+        ]
+
+    # 2. Extract aggregation original
     if isinstance(graph.nodes[int(nodes[0])]["thought"], list):
         node1 = graph.nodes[int(nodes[0])]["thought"]
     else:
@@ -741,19 +853,24 @@ def aggregate(
     else:
         node2 = ast.literal_eval(graph.nodes[int(nodes[1])]["thought"])
 
-
     combined_list = str(node1 + node2)
-    idx = max(list(graph.nodes)) + 1
-    graph.add_node(
-        idx, 
-        thought=out,
-        score=None,
-        original = combined_list,
-    )
 
-    for node in nodes:
-        node_idx = int(node)
-        graph.add_edge(node_idx, idx)
+    # 3. Update the graph
+    for out in outs:
+        for k, v in PARSE_OUT_DICT.items():
+            out = out.replace(k, v)
+        
+        idx = max(list(graph.nodes)) + 1
+        graph.add_node(
+            idx, 
+            thought=out,
+            score=None,
+            original = combined_list,
+        )
+
+        for node in nodes:
+            node_idx = int(node)
+            graph.add_edge(node_idx, idx)
 
     # Score the aggregated node
     graph, _ = score(graph, [idx], model)
@@ -764,23 +881,39 @@ def groundtruth(
     graph, 
     nodes,
     model = "",
+    run_async = False,
+    multiplicity: int = 1,
 ):
+    # 1. Solve the original problem
     problem = graph.nodes[0]["thought"]
-    sorted_problem = ast.literal_eval(problem)
-    sorted_problem.sort()
+    sorted_problem = sorted(ast.literal_eval(problem))
 
+    # Set the "original" field to the original problem in node 0
+    # and score each node against the original to override
+    # any incorrectly scored values
+    for node in nodes:
+        graph.nodes[int(node)]["original"] = problem
+        
+    graph, _ = score(
+        graph,
+        nodes,
+        model
+    )
+
+    # Check if each node matches the ground truth
     any_match = False
     for node in nodes:
         node_idx = int(node)
-        thought = graph.nodes[node_idx]["thought"]
         
         try:
+            # Extract thought
+            thought = graph.nodes[node_idx]["thought"]
             if isinstance(thought, list):
-                thought = thought
+                pass
             else:
                 thought = ast.literal_eval(thought)
             
-            if thought == sorted_problem:
+            if graph.nodes[int(node)]["score"] == 0 and (thought == sorted_problem):
                 graph.nodes[node_idx]["matches_ground_truth"] = True
                 any_match = True
             else:
@@ -792,7 +925,6 @@ def groundtruth(
     return graph, any_match
 
 # Baselines
-
 def io(
     graph,
     nodes,

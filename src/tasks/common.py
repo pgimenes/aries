@@ -1,5 +1,12 @@
 from copy import copy
 
+PARSE_OUT_DICT = {
+    "Output:": "",
+    "json": "",
+    "`": "",
+    "\n": "",
+}
+
 def get_parent_nodes(graph, node):
     parent_nodes = []
     for edge in graph.edges:
@@ -143,6 +150,7 @@ def _common_got_schedule(
     # Create split branches
     actions = ["split"]
     action_nodes = [["0"]]
+    attempts = [1]
 
     last_node = branches
     keepbest_nodes = []
@@ -152,16 +160,19 @@ def _common_got_schedule(
         generate_nodes = []
         actions += [generate_action]
         action_nodes += [[str(split_branch)] * generate_attempts]
+        attempts.append(1)
         generate_nodes += list(range(last_node + 1, last_node + 1 + generate_attempts))
         last_node += generate_attempts
 
         # Scoring
         actions += ["score"]
         action_nodes += [generate_nodes]
+        attempts.append(1)
 
         # Keep best
         actions += ["keepbest"]
         action_nodes += [generate_nodes]
+        attempts.append(1)
         last_node += 1
         keepbest_nodes += [str(last_node)]
 
@@ -176,19 +187,22 @@ def _common_got_schedule(
                 continue
 
             # Aggregate
-            actions += ["aggregate"] * aggregate_attempts
-            action_nodes += [pair] * aggregate_attempts
+            actions += ["aggregate"]
+            action_nodes += [pair]
+            attempts.append(aggregate_attempts)
             aggregate_nodes = list(range(last_node + 1, last_node + 1 + aggregate_attempts))
             last_node += aggregate_attempts
 
             # Score
             actions += ["score"]
             action_nodes += [aggregate_nodes]
+            attempts.append(1)
 
             # Keep best
             if post_aggregate_keepbest:
                 actions += ["keepbest"]
                 action_nodes += [aggregate_nodes]
+                attempts.append(1)
                 last_node += 1
                 keepbest_residual = last_node
 
@@ -198,16 +212,19 @@ def _common_got_schedule(
                 
                 if post_aggregate_keepbest:
                     action_nodes += [[last_node] * refine_attempts] 
+                    attempts.append(1)
                     refine_nodes = list(range(last_node + 1, last_node + 1 + refine_attempts))
                     last_node += refine_attempts
                 else:
                     action_nodes += [aggregate_nodes * refine_attempts]
+                    attempts.append(1)
                     refine_nodes = list(range(last_node + 1, last_node + 1 + refine_attempts * len(aggregate_nodes)))
                     last_node += refine_attempts * len(aggregate_nodes)
                 
                 # Score
                 actions += ["score"]
                 action_nodes += [refine_nodes]
+                attempts.append(1)
 
                 # Keep best
                 actions += ["keepbest"]
@@ -215,6 +232,7 @@ def _common_got_schedule(
                     action_nodes += [refine_nodes + [keepbest_residual]]
                 else:
                     action_nodes += [refine_nodes + aggregate_nodes]
+                attempts.append(1)
                 last_node += 1
 
             # Update keepbest list
@@ -225,5 +243,6 @@ def _common_got_schedule(
     # Groundtruth
     actions += ["groundtruth"]
     action_nodes += [[str(last_node)]]
+    attempts.append(1)
     last_node += 1
-    return actions, action_nodes
+    return actions, action_nodes, attempts

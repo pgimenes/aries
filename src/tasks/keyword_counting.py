@@ -1,10 +1,12 @@
-from llm import llm
+from llm import llm, async_llm
 import ast
 import pandas as pd
+import asyncio
 from .common import (
     _common_tot_schedule, 
     _common_got_schedule, 
     common_keepbest, 
+    PARSE_OUT_DICT,
 )
 
 from .countries import COUNTRIES
@@ -99,13 +101,6 @@ examples = "\n".join(examples)
 # additional_instructions = """- The count action may have a low probability of success. If previous counts were unsuccessful, it is recommended to repeat counting with higher attempt counts to increase the likelihood of finding a correct solution.
 # - If counting is not successful after many attempts, it is recommended to split the text into smaller segments to make counting easier, then aggregate the counts from each segment."""
 
-PARSE_OUT_DICT = {
-    "Output:": "",
-    "json": "",
-    "`": "",
-    "\n": "",
-}
-
 # Implementation
 
 split2_prompt = """<Instruction> Split the following input text into 2 paragraphs of approximately same length.
@@ -185,6 +180,8 @@ def split(
     graph, 
     nodes,
     model = "",
+    run_async = False,
+    multiplicity: int = 1,
 ):
     for node in nodes:
         node_idx = int(node)
@@ -262,15 +259,55 @@ Input:
 Output:
 """
 
+async def async_count(
+    graph,
+    nodes,
+    model = "",
+    multiplicity: int = 1,
+):
+    return await asyncio.gather(
+        *[
+            async_llm(
+                count_prompt.format(
+                    input=graph.nodes[int(node)]["thought"]
+                ), 
+                model=model
+            ) for node in nodes
+        ],
+    )
+
 def count(
     graph, 
     nodes,
     model = "",
+    run_async = True,
+    multiplicity: int = 1,
 ):
+    
+    # 1. Get LLM responses
+    if run_async:
+        outs = asyncio.run(async_count(graph, nodes, model=model, multiplicity=multiplicity))
+        outs = {
+            node: out[0] for node, out in zip(nodes, outs)
+        }
+    else:
+        outs = {
+            node: llm(
+                count_prompt.format(
+                    input=graph.nodes[int(node)]["thought"]
+                ), 
+                model=model
+            )[0] for node in nodes
+        }
+
+    # 2. Update the graph
     counted_nodes = []
     for node in nodes:
         node_idx = int(node)
-        out = llm(count_prompt.format(input=graph.nodes[int(node)]["thought"]), model=model)[0]
+        out = outs[node]
+
+        for key in PARSE_OUT_DICT:
+            out = out.replace(key, PARSE_OUT_DICT[key])
 
         as_dict = ast.literal_eval(out)
 
@@ -387,45 +424,95 @@ Incorrect Dictionary:
 {incorrect_dict}
 Reason:"""
 
-def refine(
-    graph, 
+async def async_refine(
+    graph,
     nodes,
     model = "",
+    multiplicity: int = 1,
 ):
-    refined_nodes = []
-    for node in nodes:
-        node_idx = int(node)
-        graph_node = graph.nodes[node_idx]
-
-        # Skip refining nodes that are already correct
-        if graph_node.get("score", None) is not None and graph_node["score"] == 0:
-            output = graph_node["thought"]
-        else:
-            out = llm(
+    return await asyncio.gather(
+        *[
+            async_llm(
                 refine_prompt.format(
                     input=graph.nodes[int(node)]["original"], 
                     incorrect_dict=graph.nodes[int(node)]["thought"], 
                 ),
                 model=model,
-            )
+            ) for node in nodes
+        ],
+    )
+
+def refine(
+    graph, 
+    nodes,
+    model = "",
+    run_async = True,
+    multiplicity: int = 1,
+):
+    # 1. Filter out nodes that are already correct
+    nodes_to_refine = []
+    refined_nodes = {}
+    for node in nodes:
+        node_idx = int(node)
+        graph_node = graph.nodes[node_idx]
+        
+        # Skip if the node is already correct
+        if graph_node.get("score", None) is not None and graph_node["score"] == 0:
+            refined_nodes[node] = {
+                "thought": graph_node["thought"],
+                "score": 0,
+                "original": graph_node["original"],
+            }
+        else:
+            nodes_to_refine.append(node)
+
+    if run_async:
+        outs = asyncio.run(async_refine(graph, nodes_to_refine, model=model))
+        outs = {
+            nodes_to_refine[i]: outs[i] for i in range(len(nodes_to_refine))
+        }
+    else:
+        outs = {
+            node: llm(
+                refine_prompt.format(
+                    input=graph.nodes[int(node)]["original"], 
+                    incorrect_dict=graph.nodes[int(node)]["thought"], 
+                ),
+                model=model,
+            )[0] for node in nodes_to_refine
+        }
+    
+    # 2. Update the graph
+    nodes_to_score = []
+    for node in nodes:
+        if node in nodes_to_refine:
+            original = graph.nodes[int(node)]["original"]
+            output = outs[node][0]
 
             try:
-                output = out[0].split("{")[1].split("}")[0]
+                # Extract the refined count as a dict
+                output = output.split("{")[1].split("}")[0]
                 output = ast.literal_eval("{" + output + "}")
             except:
-                output = graph_node["thought"]
-        
+                # If not successful, keep the original count
+                output = graph.nodes[int(node)]["thought"]
+        else:
+            original, output = refined_nodes[node]["original"], refined_nodes[node]["thought"]
+
+
         idx = max(list(graph.nodes)) + 1
         graph.add_node(
             idx,
             thought=output,
-            original=graph.nodes[node_idx]["original"],
+            original=original,
+            score=None,
         )
         graph.add_edge(node_idx, idx)
-        refined_nodes.append(idx)
+        nodes_to_score.append(idx)
 
-    # Score the refinement
-    graph, _ = score(graph, refined_nodes, model=model)
+    # 3. Score all the refined nodes
+    for node in nodes_to_score:
+        graph, _ = score(graph, [node], model=model)
 
     return graph, False
 
@@ -444,6 +531,8 @@ def score(
     graph, 
     nodes,
     model = "",
+    run_async = False,
+    multiplicity: int = 1,
 ):
     for node in nodes:
         graph_node = graph.nodes[int(node)]
@@ -489,17 +578,12 @@ def score(
             
     return graph, False
 
-def get_parent_nodes(graph, node):
-    parent_nodes = []
-    for edge in graph.edges:
-        if edge[1] == node:
-            parent_nodes.append(edge[0])
-    return parent_nodes
-
 def keepbest(
     graph, 
     nodes,
     model = "",
+    run_async = False,
+    multiplicity: int = 1,
 ):
     # Score all nodes first
     graph, _ = score(graph, nodes, model=model)
@@ -509,6 +593,8 @@ def aggregate(
     graph, 
     nodes,
     model="",
+    run_async = False,
+    multiplicity: int = 1,
 ):
     # Initialize merged thoughts and score
     merged_thought = {}
@@ -531,20 +617,21 @@ def aggregate(
         else:
             merged_score = None  # Set to None if any node lacks a score
 
-    # Generate new node index
-    idx = max(graph.nodes) + 1
+    for _ in range(multiplicity):
+        # Generate new node index
+        idx = max(graph.nodes) + 1
 
-    # Add new aggregated node
-    graph.add_node(
-        idx,
-        thought=merged_thought,
-        score=merged_score,
-        original=" ".join(merged_original),
-    )
+        # Add new aggregated node
+        graph.add_node(
+            idx,
+            thought=merged_thought,
+            score=merged_score,
+            original=" ".join(merged_original),
+        )
 
-    # Add edges from all specified nodes to the new aggregated node
-    for node_id in nodes:
-        graph.add_edge(int(node_id), idx)
+        # Add edges from all specified nodes to the new aggregated node
+        for node_id in nodes:
+            graph.add_edge(int(node_id), idx)
 
     # Score the aggregation
     graph, _ = score(graph, [idx], model=model)
@@ -555,31 +642,31 @@ def groundtruth(
     graph, 
     nodes,
     model = "",
+    run_async = False,
+    multiplicity: int = 1,
 ):
+    # 1. Solve the original problem
     original = graph.nodes[0]["thought"]
+    real_count = get_ground_truth(original)
+
+    # 2. Set the "original" field to the original problem in node 0
+    # and score each node against the original to override
+    # any incorrectly scored values
+    for node in nodes:
+        graph.nodes[int(node)]["original"] = original
+        
+    graph, _ = score(
+        graph,
+        nodes,
+        model
+    )
 
     any_match = False
     for node in nodes:
         node_idx = int(node)
         graph_node = graph.nodes[node_idx]
-        
-        matches = True
-        real_count = get_ground_truth(original)
-        for country in COUNTRIES:
-            err = abs(
-                real_count.get(
-                    country,
-                    0,
-                ) - graph.nodes[int(node)]["thought"].get(
-                    country, 
-                    0,
-                )
-            )
-            if err > 0:
-                matches = False
-                break
 
-        if matches:
+        if graph_node["score"] == 0:
             graph.nodes[node_idx]["matches_ground_truth"] = True
             any_match = True
         else:
@@ -776,4 +863,3 @@ def cot(
         graph.add_edge(node_idx, idx)
 
     return graph, False
-

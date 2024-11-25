@@ -145,7 +145,7 @@ class GoTAgent:
 
         schedule = getattr(task, "_got_schedule")
         self._got_action = 0
-        self._actions, self._action_nodes = schedule(
+        self._actions, self._action_nodes, self._attempts = schedule(
             branches,
             generate_attempts,
             aggregate_attempts,
@@ -165,6 +165,7 @@ class GoTAgent:
             "nodes": self._action_nodes[self._got_action],
             "operation": self._actions[self._got_action],
             "explanation": "",
+            "attempts": self._attempts[self._got_action],
         }
         self._got_action += 1
         return action

@@ -130,16 +130,16 @@ def run(args, data):
             }
 
             # Number of branches depends on number of sentences in the problem
-            if "sorting" in args.task:
-                kwargs["got_post_aggregate_keepbest"] = True
-                kwargs["got_post_aggregate_refine"] = True
-            if "set_intersection" in args.task:
-                kwargs["got_post_aggregate_keepbest"] = True
-                kwargs["got_post_aggregate_refine"] = False
+            # if "sorting" in args.task:
+            #     kwargs["got_post_aggregate_keepbest"] = True
+            #     kwargs["got_post_aggregate_refine"] = True
+            # if "set_intersection" in args.task:
+            #     kwargs["got_post_aggregate_keepbest"] = True
+            #     kwargs["got_post_aggregate_refine"] = False
             if args.task == "keyword_counting":
                 kwargs["got_branches"] = len(problem.split(".")) - 1
-                kwargs["got_post_aggregate_keepbest"] = False
-                kwargs["got_post_aggregate_refine"] = True
+                # kwargs["got_post_aggregate_keepbest"] = False
+                # kwargs["got_post_aggregate_refine"] = True
 
             agent = get_agent(args.agent, env, task, **kwargs)
 
@@ -177,12 +177,12 @@ def run(args, data):
             if done:
                 print(f"Result: success")
                 successes.append(problem)
-                
-                if info.get("score", None) is not None:
-                    scores.append(info["score"])
             else:
                 print(f"Result: failure")
                 failures.append(problem)
+            
+            if info.get("score", None) is not None:
+                scores.append(info["score"])
                 
         except Exception as e:
             # traceback.print_stack()
@@ -195,6 +195,7 @@ def run(args, data):
 
     print(f"Successes: {len(successes)}")
     print(f"Failures: {len(failures)}")
+
     avg_score = sum(scores) / len(scores) if len(scores) > 0 else 1000
     print(f"Average score: {avg_score}")
 

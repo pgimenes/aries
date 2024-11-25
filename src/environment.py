@@ -8,6 +8,7 @@ import networkx as nx
 
 import logging
 import importlib
+import asyncio
 
 
 logger = logging.getLogger(__name__)
@@ -114,45 +115,69 @@ class GoTEnv(gym.Env):
     ):
         operation = action["operation"]
         nodes = action["nodes"]
+        multiplicity = action.get("attempts", 1)
         explanation = action.get("explanation", "")
 
         print(f"\nStep {self.step_count}")
         print(f"========================")
         print(f"Action: {operation}")
         print(f"Nodes: {nodes}")
+        print(f"Attempts: {multiplicity}")
         print(f"Explanation: {explanation}\n")
 
-        attempts = 1
-        while attempts <= max_tries:
+        operator = getattr(self.task, operation, None)
+        if operator is None:
+            raise ValueError(f"Operation {operation} not found for task {self.task}")
+
+        tries = 1
+        success = False
+
+        while tries <= max_tries:
             try:
-                operator = getattr(self.task, operation, None)
-                if operator is None:
-                    raise ValueError(f"Operation {operation} not found for task {self.task}")
-
-                self.thought_graph, terminate = operator(self.thought_graph, nodes, self.model)
-                truncate = False
-
-                print("\nGraph state:")
-                print(f"------------------------")
-                print(self.thought_graph_repr())
-
-                # An environment is completed if there is a ground truth proposal with a score of 1
-                reward = 1 if terminate else 0  # the agent is only reached at the end of the episode
-                observation = self._get_obs()
-                info = self._get_info()
-
-                self.step_count += 1
-
-                if operation == "groundtruth":
-                    score = self.thought_graph.nodes[int(nodes[0])]["score"]
+                # Currently aggregate operation is the only one that accepts a multiplicity
+                if operation == "aggregate":
+                    kwargs = {
+                        "graph": self.thought_graph,
+                        "nodes": nodes,
+                        "model": self.model,
+                        "multiplicity": multiplicity,
+                    }
+                    self.thought_graph, terminate = operator(**kwargs)
                 else:
-                    score = None
-
-                info["score"] = score
+                    for _ in range(multiplicity):
+                        kwargs = {
+                            "graph": self.thought_graph,
+                            "nodes": nodes,
+                            "model": self.model,
+                            "multiplicity": multiplicity,
+                        }
+                        self.thought_graph, terminate = operator(**kwargs)
+                truncate = False
+                success = True
                 break
             except:
-                print(f"[{attempts}/{max_tries}] Action {operation} failed on nodes {nodes}, trying again.")
-                attempts += 1
-                continue
+                print(f"[{tries}/{max_tries}]: Operation {operation} failed.")
+                tries += 1
 
+        if not success:
+            raise Exception(f"Operation {operation} failed on nodes {nodes} after {max_tries} attempts")
+
+        print("\nGraph state:")
+        print(f"------------------------")
+        print(self.thought_graph_repr())
+
+        # An environment is completed if there is a ground truth proposal with a score of 1
+        reward = 1 if terminate else 0  # the agent is only reached at the end of the episode
+        observation = self._get_obs()
+        info = self._get_info()
+
+        self.step_count += 1
+
+        if operation == "groundtruth":
+            score = self.thought_graph.nodes[int(nodes[0])]["score"]
+        else:
+            score = None
+
+        info["score"] = score
+        
         return observation, reward, terminate, truncate, info

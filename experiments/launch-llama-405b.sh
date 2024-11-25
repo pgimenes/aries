@@ -8,15 +8,24 @@ tmux new-session -d -s sorting32-tot "conda deactivate; conda activate sglang; c
                                 --tot_width 10 \
                                 --tot_depth 3 \
                                 &> experiments/logs/llama-3.1-405b/sorting32-tot.log"
-tmux new-session -d -s sorting32-got "conda deactivate; conda activate sglang; cd reasoning-agent; \
+tmux new-session -d -s sorting32-got5 "conda deactivate; conda activate sglang; cd reasoning-agent; \
                                 python -u src/main.py \
                                 --task sorting32 \
                                 --agent got \
                                 --got_branches 2 \
-                                --got_generate_attempts 5 \
+                                --got_generate_attempts 10 \
                                 --got_aggregate_attempts 10 \
-                                --got_refine_attempts 10 \
-                                &> experiments/logs/llama-3.1-405b/sorting32-got.log"
+                                --got_post_aggregate_keepbest \
+                                &> experiments/logs/llama-3.1-405b/sorting32-got5.log"
+tmux new-session -d -s sorting32-got25 "conda deactivate; conda activate sglang; cd reasoning-agent; \
+                                python -u src/main.py \
+                                --task sorting32 \
+                                --agent got \
+                                --got_branches 2 \
+                                --got_generate_attempts 1 \
+                                --got_aggregate_attempts 15 \
+                                --got_post_aggregate_keepbest \
+                                &> experiments/logs/llama-3.1-405b/sorting32-got25.log"
 tmux new-session -d -s sorting32-llm "conda deactivate; conda activate sglang; cd reasoning-agent; python -u src/main.py \
                                 --task sorting32 \
                                 --agent llm \
@@ -33,15 +42,33 @@ tmux new-session -d -s sorting64-tot "conda deactivate; conda activate sglang; c
                                 --tot_width 10 \
                                 --tot_depth 7 \
                                 &> experiments/logs/llama-3.1-405b/sorting64-tot.log"
-tmux new-session -d -s sorting64-got "conda deactivate; conda activate sglang; cd reasoning-agent; \
+tmux new-session -d -s sorting64-got5 "conda deactivate; conda activate sglang; cd reasoning-agent; \
+                                python -u src/main.py \
+                                --task sorting64 \
+                                --agent got \
+                                --got_branches 4 \
+                                --got_generate_attempts 15 \
+                                --got_aggregate_attempts 20 \
+                                --got_post_aggregate_keepbest \
+                                &> experiments/logs/llama-3.1-405b/sorting64-got5.log"
+tmux new-session -d -s sorting64-got25 "conda deactivate; conda activate sglang; cd reasoning-agent; \
+                                python -u src/main.py \
+                                --task sorting64 \
+                                --agent got \
+                                --got_branches 4 \
+                                --got_generate_attempts 1 \
+                                --got_aggregate_attempts 10 \
+                                --got_post_aggregate_keepbest \
+                                &> experiments/logs/llama-3.1-405b/sorting64-got25.log"
+tmux new-session -d -s sorting64-got50 "conda deactivate; conda activate sglang; cd reasoning-agent; \
                                 python -u src/main.py \
                                 --task sorting64 \
                                 --agent got \
                                 --got_branches 4 \
                                 --got_generate_attempts 5 \
-                                --got_aggregate_attempts 10 \
-                                --got_refine_attempts 5 \
-                                &> experiments/logs/llama-3.1-405b/sorting64-got.log"
+                                --got_aggregate_attempts 15 \
+                                --got_post_aggregate_keepbest \
+                                &> experiments/logs/llama-3.1-405b/sorting64-got50.log"
 tmux new-session -d -s sorting64-llm "conda deactivate; conda activate sglang; cd reasoning-agent; python -u src/main.py \
                                 --task sorting64 \
                                 --agent llm \

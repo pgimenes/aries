@@ -1,9 +1,11 @@
-from llm import llm
+from llm import llm, async_llm
 import ast
+import asyncio
 from .common import (
     _common_tot_schedule, 
     _common_got_schedule, 
     common_keepbest, 
+    PARSE_OUT_DICT,
 )
 
 problem_definition = "Find the intersection of two sets of numbers."
@@ -186,6 +188,8 @@ def split(
     graph, 
     nodes,
     model = "",
+    run_async = False,
+    multiplicity: int = 1,
 ):
     for node in nodes:
         # 1. Send the prompt
@@ -247,22 +251,54 @@ Input Set 1: {set1}
 Input Set 2: {set2}
 Output:"""
 
+async def async_intersect(
+    graph,
+    nodes,
+    model = "",
+    multiplicity: int = 1,
+):
+    return await asyncio.gather(
+        *[
+            async_llm(
+                intersect_prompt.format(
+                    set1=graph.nodes[int(node)]["thought"]["set1"],
+                    set2=graph.nodes[int(node)]["thought"]["set2"],
+                ),
+                model=model,
+            ) for node in nodes
+        ],
+    )
+
 def intersect(
     graph, 
     nodes,
     model = "",
+    run_async = True,
+    multiplicity: int = 1,
 ):
+
+    # 1. Get LLM responses
+    if run_async:
+        outs = asyncio.run(async_intersect(graph, nodes, model=model, multiplicity=multiplicity))
+        outs = {
+            node: out[0] for node, out in zip(nodes, outs)
+        }
+    else:
+        outs = {
+            node: llm(
+                intersect_prompt.format(
+                    set1=graph.nodes[int(node)]["thought"]["set1"],
+                    set2=graph.nodes[int(node)]["thought"]["set2"],
+                ), 
+                model=model
+            )[0] for node in nodes
+        }
+
+    # 2. Update the graph
     intersected_nodes = []
     for node in nodes:
         node_idx = int(node)
-
-        out = llm(
-            intersect_prompt.format(
-                set1=graph.nodes[int(node)]["thought"]["set1"],
-                set2=graph.nodes[int(node)]["thought"]["set2"],
-            ), 
-            model=model
-        )[0]
+        out = outs[node]
 
         idx = max(list(graph.nodes)) + 1
         graph.add_node(
@@ -274,7 +310,7 @@ def intersect(
         graph.add_edge(node_idx, idx)
         intersected_nodes.append(idx)
 
-    # Score all intersected nodes
+    # 3. Score all intersected nodes
     for node in intersected_nodes:
         graph, _ = score(graph, [node], model=model)
 
@@ -284,15 +320,13 @@ def score(
     graph,
     nodes,
     model = "",
+    run_async = False,
+    multiplicity: int = 1,
 ):
     for node in nodes:
         node_idx = int(node)
         graph_node = graph.nodes[node_idx]
         thought = graph_node["thought"]
-
-        # Skip scoring if already scored
-        if "score" in graph_node.keys() and graph_node["score"] is not None:
-            continue
 
         errors = 0
         feedback = {
@@ -357,6 +391,8 @@ def keepbest(
     graph, 
     nodes,
     model = "",
+    run_async = False,
+    multiplicity: int = 1,
 ):
     # Score all non-scored nodes
     graph, _ = score(graph, nodes, model=model)
@@ -395,45 +431,95 @@ Input Set 1: {set1}
 Input Set 2: {set2}
 Incorrect Intersection Set: {incorrect_intersection}"""
 
-def refine(
-    graph, 
+async def async_refine(
+    graph,
     nodes,
     model = "",
+    multiplicity: int = 1,
 ):
-    refined_nodes = []
-    for node in nodes:
-        node_idx = int(node)
-
-        # Skip refining nodes that are already correct
-        if graph.nodes[int(node)].get("score", None) is not None and graph.nodes[int(node)]["score"] == 0:
-            output = graph.nodes[int(node)]["thought"]
-        else:
-            out = llm(
+    return await asyncio.gather(
+        *[
+            async_llm(
                 refine_prompt.format(
                     set1=graph.nodes[int(node)]["set1"],
                     set2=graph.nodes[int(node)]["set2"],
                     incorrect_intersection=graph.nodes[int(node)]["thought"],
-                ), model=model)[0]
+                ),
+                model=model,
+            ) for node in nodes
+        ],
+    )
 
-            # Extract steps and answer
-            try:
-                output = out.split("Output: ")[1]
-                output = ast.literal_eval(output)
-            except:
-                output = graph.nodes[int(node)]["thought"]
+def refine(
+    graph, 
+    nodes,
+    model = "",
+    run_async = True,
+    multiplicity: int = 1,
+):
+    # 1. Filter out nodes that are already correct
+    nodes_to_refine = []
+    refined_nodes = {}
+    for node in nodes:
+        node_idx = int(node)
+        graph_node = graph.nodes[node_idx]
+        
+        # Skip if the node is already correct
+        if graph_node.get("score", None) is not None and graph_node["score"] == 0:
+            refined_nodes[node] = {
+                "thought": graph_node["thought"],
+                "score": 0,
+                "set1": graph_node["set1"],
+                "set2": graph_node["set2"],
+            }
+        else:
+            nodes_to_refine.append(node)
+
+    if run_async:
+        outs = asyncio.run(async_refine(graph, nodes_to_refine, model=model))
+        outs = {
+            nodes_to_refine[i]: outs[i] for i in range(len(nodes_to_refine))
+        }
+    else:
+        outs = {
+            node: llm(
+                refine_prompt.format(
+                    set1=graph.nodes[int(node)]["set1"],
+                    set2=graph.nodes[int(node)]["set2"],
+                    incorrect_intersection=graph.nodes[int(node)]["thought"],
+                ),
+                model=model,
+            )[0] for node in nodes_to_refine
+        }
+    
+    # 2. Update the graph
+    nodes_to_score = []
+    for node in nodes:
+        if node in nodes_to_refine:
+            output = outs[node][0]
+            set1 = graph.nodes[int(node)]["set1"]
+            set2 = graph.nodes[int(node)]["set2"]
+        else:
+            output = refined_nodes[node]["thought"]
+            set1 = refined_nodes[node]["set1"]
+            set2 = refined_nodes[node]["set2"]
+
+        for k, v in PARSE_OUT_DICT.items():
+            output = output.replace(k, v)
 
         idx = max(list(graph.nodes)) + 1
         graph.add_node(
             idx,
             thought=output,
-            set1=graph.nodes[int(node)]["set1"],
-            set2=graph.nodes[int(node)]["set2"],
+            set1 = set1,
+            set2 = set2,
+            score=None,
         )
         graph.add_edge(node_idx, idx)
-        refined_nodes.append(idx)
+        nodes_to_score.append(idx)
 
-    # Score all the refined nodes
-    for node in refined_nodes:
+    # 3. Score all the refined nodes
+    for node in nodes_to_score:
         graph, _ = score(graph, [node], model=model)
 
     return graph, False
@@ -445,33 +531,64 @@ List 1: {input1}
 List 2: {input2}
 """
 
+async def async_aggregate(
+    graph,
+    nodes,
+    model = "",
+    multiplicity: int = 1,
+):
+    return await asyncio.gather(
+        *[
+            async_llm(
+                aggregate_prompt.format(
+                    input1=graph.nodes[int(nodes[0])]["thought"],
+                    input2=graph.nodes[int(nodes[1])]["thought"]
+                ),
+                model=model
+            ) for _ in range(multiplicity)
+        ],
+    )
+
 def aggregate(
     graph, 
     nodes,
     model = "",
+    run_async: bool = True,
+    multiplicity: int = 1,
 ):
     if len(nodes) != 2:
         raise ValueError("aggregate action requires exactly 2 nodes to be selected")
     
-    # 1. Send the prompt
-    out = llm(
-        aggregate_prompt.format(
-            input1=graph.nodes[int(nodes[0])]["thought"],
-            input2=graph.nodes[int(nodes[1])]["thought"]
-        ),
-        model=model
-    )
+    # 1. Run the aggregate attempts
+    if run_async:
+        outs = asyncio.run(
+            async_aggregate(
+                graph,
+                nodes,
+                model=model,
+                multiplicity=multiplicity,
+            )
+        )
+        outs = [out[0] for out in outs]
     
-    # 2. Update the graph
-    idx = max(list(graph.nodes)) + 1
-
-    # Find combined score
+    else:
+        outs = [
+            llm(
+                aggregate_prompt.format(
+                    input1=graph.nodes[int(nodes[0])]["thought"],
+                    input2=graph.nodes[int(nodes[1])]["thought"]
+                ),
+                model=model
+            )[0] for _ in range(multiplicity)
+        ]
+    
+    # 2. Find combined score and set 2
     if graph.nodes[int(nodes[0])].get("score", None) is None or graph.nodes[int(nodes[1])].get("score", None) is None:
         newscore = None
     else:
         newscore = graph.nodes[int(nodes[0])]["score"] + graph.nodes[int(nodes[1])]["score"]
         
-    # Find combined set 2 (set 1 should be the same in both nodes)
+    # set2
     if isinstance(graph.nodes[int(nodes[0])]["set2"], list):
         set2_1 = graph.nodes[int(nodes[0])]["set2"]
     else: 
@@ -484,17 +601,23 @@ def aggregate(
 
     combined_set2 = str(set2_1 + set2_2)
 
-    graph.add_node(
-        idx, 
-        thought=out[0],
-        score=newscore,
-        set1=graph.nodes[int(nodes[0])]["set1"],
-        set2=combined_set2,
-    )
+    # 3. Update the graph
+    for out in outs:
+        # for k, v in PARSE_OUT_DICT.items():
+        #     out = out.replace(k, v)
+        
+        idx = max(list(graph.nodes)) + 1
+        graph.add_node(
+            idx, 
+            thought=out,
+            score=newscore,
+            set1=graph.nodes[int(nodes[0])]["set1"],
+            set2=combined_set2,
+        )
 
-    for node in nodes:
-        node_idx = int(node)
-        graph.add_edge(node_idx, idx)
+        for node in nodes:
+            node_idx = int(node)
+            graph.add_edge(node_idx, idx)
 
     # Score the aggregated node
     graph, _ = score(graph, [idx], model)
@@ -505,31 +628,47 @@ def groundtruth(
     graph, 
     nodes,
     model = "",
+    run_async = False,
+    multiplicity: int = 1,
 ):
+    # 1. Solve the original problem
     original = graph.nodes[0]["thought"]
+    set1 = set(ast.literal_eval(original["set1"]))
+    set2 = set(ast.literal_eval(original["set2"]))
+    intersection = list(set1.intersection(set2))
+    intersection = sorted(intersection)
 
+    # 2. Set the "original" field to the original problem
+    for node in nodes:
+        graph.nodes[int(node)]["set1"] = graph.nodes[0]["thought"]["set1"]
+        graph.nodes[int(node)]["set2"] = graph.nodes[0]["thought"]["set2"]
+
+    graph, _ = score(
+        graph,
+        nodes,
+        model
+    )
+
+    # 3. Check against ground truth
     any_match = False
     for node in nodes:
         node_idx = int(node)
-        graph_node = graph.nodes[node_idx]
 
-        # Parse the expression
-        set1 = set(ast.literal_eval(original["set1"]))
-        set2 = set(ast.literal_eval(original["set2"]))
-        intersection = list(set1.intersection(set2))
-        intersection.sort()
+        try:
+            thought = graph.nodes[node_idx]["thought"]
+            if isinstance(thought, list):
+                pass
+            else:
+                thought = ast.literal_eval(thought)
+            thought.sort()
 
-        if isinstance(graph_node["thought"], list):
-            thought = graph_node["thought"]
-        else:
-            thought = ast.literal_eval(graph_node["thought"])
-        thought.sort()
-
-        if intersection == thought:
-            graph_node["matches_ground_truth"] = True
-            any_match = True
-        else:
-            graph_node["matches_ground_truth"] = False
+            if graph.nodes[int(node)]["score"] == 0 and (intersection == thought):
+                graph.nodes[node_idx]["matches_ground_truth"] = True
+                any_match = True
+            else:
+                graph.nodes[node_idx]["matches_ground_truth"] = False
+        except:
+            graph.nodes[node_idx]["matches_ground_truth"] = False
 
     return graph, any_match
 
