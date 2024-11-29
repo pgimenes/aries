@@ -12,30 +12,30 @@ problem_definition = "Find the intersection of two sets of numbers."
 
 actions = {
     "split": {
-        "description": "Split a list into two to decompose the problem.",
+        "description": "Split set 2 into smaller subsets.",
         "preconditions": "",
-        "effects": "Two new nodes are created, connected to the original node.",
+        "effects": "New nodes are created, containing copies of set 1, and subsets of set2.",
     },
     "intersect": {
-        "description": "Find the intersection of two subsets.",
+        "description": "Find the intersection of the subsets in the selected nodes.",
         "preconditions": "",
-        "effects": "A new node with the intersection is created, connected to the original node.",
+        "effects": "For each selected node, a new node is created containing the intersection of set 1 and set2.",
     },
     "aggregate": {
         "description": "Merge the intersected subsets of the selected nodes into a single set intersection.",
-        "preconditions": "Only two nodes should be selected.",
-        "effects": "A new node is created, connected to the two selected nodes.",
-    },
-    "refine": {
-        "description": "Refine an intersection by fixing any existing mistakes.",
-        "preconditions": "The node should have a non-zero score.",
-        "effects": "A new node is created with a refined sorting of the selected node, connected to the selected node.",
-    },
-    "score": {
-        "description": "Count the number of mistakes in the node.",
         "preconditions": "",
-        "effects": "The node is annotated with a score, which is the number of mistakes. The node may also be annotated with a feedback dictionary. The missing_elements key indicates the number of elements that are missing from the sorted list. The extra_elements key indicates the number of elements that are in the sorted list but not in the original list.",
+        "effects": "A new node is created, connected to the selected nodes.",
     },
+    # "refine": {
+    #     "description": "Refine an intersection by fixing any existing mistakes.",
+    #     "preconditions": "The node should have a non-zero score.",
+    #     "effects": "A new node is created with a refined sorting of the selected node, connected to the selected node.",
+    # },
+    # "score": {
+    #     "description": "Count the number of mistakes in the node.",
+    #     "preconditions": "",
+    #     "effects": "The node is annotated with a score, which is the number of mistakes. The node may also be annotated with a feedback dictionary. The missing_elements key indicates the number of elements that are missing from the sorted list. The extra_elements key indicates the number of elements that are in the sorted list but not in the original list.",
+    # },
     "keepbest": {
         "description": "Out of the selected nodes, keep the one with the highest score, and delete the rest.",
         "preconditions": "The selected nodes must have been scored.",
@@ -82,6 +82,10 @@ split
 <nodes>
 [0]
 </nodes>
+
+<attempts>
+1
+</attempts>
 
 <explanation>
 The sets are too large to intersect directly, so we need to split them into smaller sets first.
@@ -276,7 +280,6 @@ def intersect(
     run_async = True,
     multiplicity: int = 1,
 ):
-
     # 1. Get LLM responses
     if run_async:
         outs = asyncio.run(async_intersect(graph, nodes, model=model, multiplicity=multiplicity))
@@ -524,11 +527,10 @@ def refine(
 
     return graph, False
 
-aggregate_prompt = """<Instruction> Merge the following 2 lists into one list by appending the second list to the first list.
+aggregate_prompt = """<Instruction> Merge the following lists into one list by appending them together.
 Only output the final list without any additional text or thoughts! </Instruction>
 
-List 1: {input1}
-List 2: {input2}
+Lists: {inputs}
 """
 
 async def async_aggregate(
@@ -541,24 +543,20 @@ async def async_aggregate(
         *[
             async_llm(
                 aggregate_prompt.format(
-                    input1=graph.nodes[int(nodes[0])]["thought"],
-                    input2=graph.nodes[int(nodes[1])]["thought"]
+                    inputs=[graph.nodes[int(node)]["thought"] for node in nodes],
                 ),
                 model=model
             ) for _ in range(multiplicity)
         ],
     )
 
-def aggregate(
+def aggregate( 
     graph, 
     nodes,
     model = "",
     run_async: bool = True,
     multiplicity: int = 1,
 ):
-    if len(nodes) != 2:
-        raise ValueError("aggregate action requires exactly 2 nodes to be selected")
-    
     # 1. Run the aggregate attempts
     if run_async:
         outs = asyncio.run(
@@ -569,42 +567,38 @@ def aggregate(
                 multiplicity=multiplicity,
             )
         )
-        outs = [out[0] for out in outs]
+        outs = [out[0] for out in outs] 
     
     else:
         outs = [
             llm(
                 aggregate_prompt.format(
-                    input1=graph.nodes[int(nodes[0])]["thought"],
-                    input2=graph.nodes[int(nodes[1])]["thought"]
+                    inputs=[graph.nodes[int(node)]["thought"] for node in nodes],
                 ),
                 model=model
             )[0] for _ in range(multiplicity)
         ]
     
-    # 2. Find combined score and set 2
-    if graph.nodes[int(nodes[0])].get("score", None) is None or graph.nodes[int(nodes[1])].get("score", None) is None:
+    # 2a. Find combined score
+    if any(
+        graph.nodes[int(node)].get("score", None) is None for node in nodes
+    ):
         newscore = None
     else:
-        newscore = graph.nodes[int(nodes[0])]["score"] + graph.nodes[int(nodes[1])]["score"]
-        
-    # set2
-    if isinstance(graph.nodes[int(nodes[0])]["set2"], list):
-        set2_1 = graph.nodes[int(nodes[0])]["set2"]
-    else: 
-        set2_1 = ast.literal_eval(graph.nodes[int(nodes[0])]["set2"])
+        newscore = sum(graph.nodes[int(node)]["score"] for node in nodes)
 
-    if isinstance(graph.nodes[int(nodes[1])]["set2"], list):
-        set2_2 = graph.nodes[int(nodes[1])]["set2"]
-    else:
-        set2_2 = ast.literal_eval(graph.nodes[int(nodes[1])]["set2"])
+    # 2b. Find combined set2
+    combined_set2 = []
+    for node in nodes:
+        if isinstance(graph.nodes[int(node)]["set2"], list):
+            set2 = graph.nodes[int(node)]["set2"]
+        else: 
+            set2 = ast.literal_eval(graph.nodes[int(node)]["set2"])
 
-    combined_set2 = str(set2_1 + set2_2)
+        combined_set2 += set2
 
     # 3. Update the graph
     for out in outs:
-        # for k, v in PARSE_OUT_DICT.items():
-        #     out = out.replace(k, v)
         
         idx = max(list(graph.nodes)) + 1
         graph.add_node(
