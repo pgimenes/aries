@@ -57,6 +57,8 @@ for task in tasks:
             try:
                 query_count = int(re.findall(r'query count: (\d+)+', content)[0])
                 score = float(re.findall(r'score: (\d+\.\d+)', content)[0])
+                if score >= 1000:
+                    continue
                 trials.append((query_count, score, config))
             except:
                 continue
@@ -135,9 +137,9 @@ for task in tasks:
                                 --got_refine_attempts {got_refine_attempts} \\
 """
         if got_post_aggregate_keepbest:
-            args += "                                --got_post_aggregate_keepbest \\ \n"
+            args += "                                --got_post_aggregate_keepbest \\\n"
         if got_post_aggregate_refine:
-            args += "                                --got_post_aggregate_refine \\ \n"
+            args += "                                --got_post_aggregate_refine \\\n"
 
-        print(f"got{name}: {trials[idx][3]}")
+        print(f"got{name}: {best_trials[idx]}")
         print(args)

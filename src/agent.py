@@ -1,6 +1,7 @@
 import gymnasium as gym
-from llm import llm
+from llm import llm, async_llm
 import re
+import asyncio
     
 class IOAgent:
     def __init__(
@@ -179,18 +180,19 @@ class LLMAgent:
         problem_definition: str,
         actions: dict[str, str],
         max_iterations: int = None,
+        cot_sc_branches: int = 1,
     ):
         self.env = env
         self.task = task
         self.model = model
+        self.max_iterations = max_iterations if max_iterations is not None else 25
+        self.cot_sc_branches = cot_sc_branches
 
         # Things injected into the agent prompt
         self.problem_definition = problem_definition
         self.actions = actions
         self.task_examples = getattr(task, "examples")
         self.additional_instructions = getattr(task, "additional_instructions") if hasattr(task, "additional_instructions") else ""
-
-        self.max_iterations = max_iterations if max_iterations is not None else 25
 
         self.action_history = []
 
@@ -214,10 +216,12 @@ Your instructions are:
 
 3. Choose the node or nodes to perform the action on
 
-4. Provide an explanation for the chosen action and nodes. Outline the reasoning behind the choice by reiterating the current strategy to finding a solution to the problem. Explain whether the chosen action is continuing the current strategy, refining it, or exploring a new direction.
+4. Specify the number of times to attempt the chosen action on the selected nodes.
+
+5. Provide an explanation for the chosen action and nodes. Outline the reasoning behind the choice by reiterating the current strategy to finding a solution to the problem. Explain whether the chosen action is continuing the current strategy, refining it, or exploring a new direction.
 
 Additional instructions:
-- The format of the output should match the examples. The analysis should be wrapped by <analysis> tags. The next action should be wrapped by <next_action> tags. The nodes should be wrapped by <nodes> tags. The explanation should be wrapped by <explanation> tags.
+- The format of the output should match the examples. The analysis should be wrapped by <analysis> tags. The next action should be wrapped by <next_action> tags. The nodes should be wrapped by <nodes> tags. The number of attempts should be wrapped by <attempts> tags. The explanation should be wrapped by <explanation> tags.
 
 - If you think one of the nodes contains the correct solution, you can choose the 'groundtruth' operation to compare it with the ground truth. It's possible this node is already in the graph, or you may need to create it by performing other operations.
 
@@ -257,7 +261,7 @@ OUTPUT:"""
         return actions
 
 
-    def get_action(self, obs: tuple[int, int, bool]) -> int:        
+    async def _generate_action(self):
         graph_repr = self.env.thought_graph_repr()
         prompt = self.prompt.format(
             problem_definition=self.problem_definition,
@@ -265,26 +269,16 @@ OUTPUT:"""
             examples=self.task_examples,
             history=self._format_action_history(),
             graph=graph_repr,
-            additional_instructions="",
+            additional_instructions=self.additional_instructions,
         )
 
-        attempts = 1
-        prompts = []
-        outs = []
+        get_action_attempts = 1
         action = None
-        
-        while True:
-            res = llm(prompt, model=self.model)
-            
-            prompts.append(prompt)
-            outs.append(res[0])
-
-            if attempts > 5:
-                break
-
+        while get_action_attempts <= 10:
+            res = await async_llm(prompt, model=self.model)
             try:
                 match = re.search(
-                    r"(?i)<analysis>\s*(.*?)\s*</analysis>\s*<next_action>\s*(\w+)\s*</next_action>\s*<nodes>\s*\[([0-9,\s]+)]\s*</nodes>\s*<explanation>\s*(.*?)\s*</explanation>",
+                    r"(?i)<analysis>\s*(.*?)\s*</analysis>\s*<next_action>\s*(\w+)\s*</next_action>\s*<nodes>\s*\[([0-9,\s]+)]\s*</nodes>\s*<attempts>\s*([0-9,\s]+)\s*</attempts>\s*<explanation>\s*(.*?)\s*</explanation>",
                     res[0],
                     re.DOTALL
                 )
@@ -292,22 +286,65 @@ OUTPUT:"""
                 analysis = match.group(1)
                 operation = match.group(2)
                 nodes = match.group(3)
-                explanation = match.group(4)
-                
-                action = {
-                    "nodes": [int(node) for node in nodes.split(",")],
-                    "operation": operation,
-                    "explanation": explanation,
-                    "analysis": analysis,
-                }
+                num_attempts = match.group(4)
+                explanation = match.group(5)
 
+                action = {
+                    "analysis": analysis,
+                    "operation": operation,
+                    "nodes": [int(node) for node in nodes.split(",")],
+                    "attempts": int(num_attempts),
+                    "explanation": explanation,
+                }
                 break
             except Exception as exc:
-                print(f"[{attempts} / 5] Failed to parse LLM output: {exc}")
-                attempts += 1
-                pass
+                print(f"[{get_action_attempts} / 5] Failed to parse LLM output: {exc}")
+                get_action_attempts += 1
 
         if action is None:
             raise Exception("Failed to parse LLM output after 5 attempts")
         
+        return action
+
+
+    async def get_action(self, obs: tuple[int, int, bool]) -> int:        
+        graph_repr = self.env.thought_graph_repr()
+        prompt = self.prompt.format(
+            problem_definition=self.problem_definition,
+            actions=self._format_action_list(),
+            examples=self.task_examples,
+            history=self._format_action_history(),
+            graph=graph_repr,
+            additional_instructions=self.additional_instructions,
+        )
+
+        action_proposals = []
+        
+        # Gather action proposals, ignoring exceptions
+        action_proposals = await asyncio.gather(
+            *[self._generate_action() for _ in range(self.cot_sc_branches)], 
+            return_exceptions=True
+        )
+        action_proposals = [result for result in action_proposals if not isinstance(result, Exception)]
+
+        # Take action with highest occurance
+        vote_dict = {}
+        for action in action_proposals:
+            key = (action["operation"], tuple(action["nodes"]), action["attempts"])
+            vote_dict[key] = vote_dict.get(key, 0) + 1
+        print(f"Action Votes: {vote_dict}")
+        highest_vote = max(vote_dict, key=vote_dict.get)
+
+        explanation = ""
+        attempts = 1
+        for action in action_proposals:
+            if (action["operation"], tuple(action["nodes"]), action["attempts"]) == highest_vote:
+                explanation = action["explanation"]
+
+        action = {
+            "operation": highest_vote[0],
+            "nodes": list(highest_vote[1]),
+            "attempts": highest_vote[2],
+            "explanation": explanation,
+        }
         return action

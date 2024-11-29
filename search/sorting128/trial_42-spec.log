@@ -1,0 +1,15 @@
+========== Trial 42 ==========
+alpha: 0.9
+got_branches: 8
+got_post_aggregate_keepbest: True
+got_post_aggregate_refine: False
+got_generate_attempts: 1
+got_aggregate_attempts: 10
+got_refine_attempts: 15
+query count: 79
+
+========== Results ==========
+alpha: 0.9
+query count: 79
+score: 15.7
+cost: 22.029999999999998

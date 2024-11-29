@@ -1,0 +1,15 @@
+========== Trial 67 ==========
+alpha: 0.9
+got_branches: 2
+got_post_aggregate_keepbest: True
+got_post_aggregate_refine: False
+got_generate_attempts: 5
+got_aggregate_attempts: 1
+got_refine_attempts: 5
+query count: 12
+
+========== Results ==========
+alpha: 0.9
+query count: 12
+score: 1.0
+cost: 2.0999999999999996

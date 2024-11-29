@@ -1,0 +1,15 @@
+========== Trial 98 ==========
+alpha: 0.9
+got_branches: 4
+got_post_aggregate_keepbest: True
+got_post_aggregate_refine: True
+got_generate_attempts: 5
+got_aggregate_attempts: 5
+got_refine_attempts: 20
+query count: 96
+
+========== Results ==========
+alpha: 0.9
+query count: 96
+score: 0.2
+cost: 9.779999999999998

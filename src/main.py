@@ -5,6 +5,7 @@ from agent import LLMAgent, GoTAgent, IOAgent, CoTAgent, ToTAgent
 import importlib
 import pandas as pd
 import json
+import asyncio
 
 import sys, pdb, traceback
 
@@ -18,7 +19,7 @@ def excepthook(exc_type, exc_value, exc_traceback):
 
 num_episodes = 1
 
-def get_agent(agent, env, task, **kwargs):
+def get_agent(agent, env, task, args, **kwargs):
     if agent == "io":
         return IOAgent(
             env=env,
@@ -65,6 +66,7 @@ def get_agent(agent, env, task, **kwargs):
             problem_definition = task.problem_definition,
             actions = task.actions,
             max_iterations = kwargs.get("max_iterations", 25),
+            cot_sc_branches=args.cot_sc_branches,
         )
 
 def run(args, data):
@@ -141,10 +143,11 @@ def run(args, data):
                 # kwargs["got_post_aggregate_keepbest"] = False
                 # kwargs["got_post_aggregate_refine"] = True
 
-            agent = get_agent(args.agent, env, task, **kwargs)
+            agent = get_agent(args.agent, env, task, args, **kwargs)
 
             # Run agent on environment
             done = False
+            last_score = None
             itr = 0    
             attempts = 1
             
@@ -152,7 +155,10 @@ def run(args, data):
                 if itr >= agent.max_iterations or attempts > 5:
                     break
 
-                action = agent.get_action(obs)
+                if isinstance(agent, LLMAgent):
+                    action = asyncio.run(agent.get_action(obs))
+                else:
+                    action = agent.get_action(obs)
 
                 try:
                     obs, reward, terminated, truncated, info = env.step(action)
@@ -160,6 +166,9 @@ def run(args, data):
                     # Only update the action history if it ran successfuly
                     if isinstance(agent, LLMAgent):
                         agent.action_history.append(action)
+
+                    if info.get("score", None) is not None:
+                        last_score = info["score"]
 
                     done = terminated or truncated
                     itr += 1
@@ -181,8 +190,8 @@ def run(args, data):
                 print(f"Result: failure")
                 failures.append(problem)
             
-            if info.get("score", None) is not None:
-                scores.append(info["score"])
+            if last_score is not None:
+                scores.append(last_score)
                 
         except Exception as e:
             # traceback.print_stack()
@@ -233,6 +242,11 @@ def argparser():
         "--max_iterations",
         type=int,
         default=25,
+    )
+    parser.add_argument(
+        "--cot_sc_branches",
+        type=int,
+        default=1,
     )
 
     # GoT Agent

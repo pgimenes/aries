@@ -1,0 +1,15 @@
+========== Trial 81 ==========
+alpha: 0.9
+got_branches: 16
+got_post_aggregate_keepbest: False
+got_post_aggregate_refine: True
+got_generate_attempts: 1
+got_aggregate_attempts: 1
+got_refine_attempts: 1
+query count: 47
+
+========== Results ==========
+alpha: 0.9
+query count: 47
+score: 0.0
+cost: 4.699999999999999
