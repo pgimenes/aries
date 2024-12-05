@@ -43,7 +43,7 @@ tmux new-session -d -s sorting32-llm "conda deactivate; conda activate sglang; c
                                 --task sorting32 \
                                 --agent llm \
                                 --max_iterations 23 \
-                                --cot_sc_branches 10 \
+                                --cot_sc_branches 5 \
                                 &> experiments/logs/llama-3.1-405b/sorting32-llm.log"
 
 # sorting64
@@ -92,7 +92,7 @@ tmux new-session -d -s sorting64-llm "conda deactivate; conda activate sglang; c
                                 --task sorting64 \
                                 --agent llm \
                                 --max_iterations 59 \
-                                --cot_sc_branches 10 \
+                                --cot_sc_branches 5 \
                                 &> experiments/logs/llama-3.1-405b/sorting64-llm.log"
 
 # sorting128
@@ -141,7 +141,7 @@ tmux new-session -d -s sorting128-llm "conda deactivate; conda activate sglang; 
                                 --task sorting128 \
                                 --agent llm \
                                 --max_iterations 131 \
-                                --cot_sc_branches 10 \
+                                --cot_sc_branches 5 \
                                 &> experiments/logs/llama-3.1-405b/sorting128-llm.log"
 
 # set_intersection32
@@ -188,7 +188,7 @@ tmux new-session -d -s set-intersection32-llm "conda deactivate; conda activate 
                                 --task set_intersection32 \
                                 --agent llm \
                                 --max_iterations 20 \
-                                --cot_sc_branches 10 \
+                                --cot_sc_branches 5 \
                                 &> experiments/logs/llama-3.1-405b/set-intersection32-llm.log"
 
 # set_intersection64
@@ -238,7 +238,7 @@ tmux new-session -d -s set-intersection64-llm "conda deactivate; conda activate 
                                 --task set_intersection64 \
                                 --agent llm \
                                 --max_iterations 50 \
-                                --cot_sc_branches 10 \
+                                --cot_sc_branches 5 \
                                 &> experiments/logs/llama-3.1-405b/set-intersection64-llm.log"
 
 # set_intersection128
@@ -285,7 +285,7 @@ tmux new-session -d -s set-intersection128-llm "conda deactivate; conda activate
                                 --task set_intersection128 \
                                 --agent llm \
                                 --max_iterations 75 \
-                                --cot_sc_branches 10 \
+                                --cot_sc_branches 5 \
                                 &> experiments/logs/llama-3.1-405b/set-intersection128-llm.log"
 
 # keyword_counting
