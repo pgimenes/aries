@@ -133,9 +133,18 @@ class GoTEnv(gym.Env):
         success = False
 
         while tries <= max_tries:
-            try:
-                # Currently aggregate operation is the only one that accepts a multiplicity
-                if operation == "aggregate":
+            # try:
+            # Currently aggregate operation is the only one that accepts a multiplicity
+            if operation == "aggregate":
+                kwargs = {
+                    "graph": self.thought_graph,
+                    "nodes": nodes,
+                    "model": self.model,
+                    "multiplicity": multiplicity,
+                }
+                self.thought_graph, terminate = operator(**kwargs)
+            else:
+                for _ in range(multiplicity):
                     kwargs = {
                         "graph": self.thought_graph,
                         "nodes": nodes,
@@ -143,21 +152,12 @@ class GoTEnv(gym.Env):
                         "multiplicity": multiplicity,
                     }
                     self.thought_graph, terminate = operator(**kwargs)
-                else:
-                    for _ in range(multiplicity):
-                        kwargs = {
-                            "graph": self.thought_graph,
-                            "nodes": nodes,
-                            "model": self.model,
-                            "multiplicity": multiplicity,
-                        }
-                        self.thought_graph, terminate = operator(**kwargs)
-                truncate = False
-                success = True
-                break
-            except:
-                print(f"[{tries}/{max_tries}]: Operation {operation} failed.")
-                tries += 1
+            truncate = False
+            success = True
+            break
+            # except:
+            #     print(f"[{tries}/{max_tries}]: Operation {operation} failed.")
+            #     tries += 1
 
         if not success:
             raise Exception(f"Operation {operation} failed on nodes {nodes} after {max_tries} attempts")

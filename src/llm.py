@@ -64,7 +64,7 @@ def completions_with_backoff(**kwargs):
 
 def llm(
     prompt,
-    model=None, 
+    model="", 
     temperature=1, 
     max_tokens=1000000, 
     n=1, 
@@ -106,7 +106,7 @@ def llm(
 
 async def async_llm(
     prompt,
-    model=None, 
+    model="", 
     temperature=1, 
     max_tokens=1000, 
     n=1, 

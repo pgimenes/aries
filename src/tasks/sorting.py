@@ -1,5 +1,5 @@
 from llm import llm, async_llm
-import ast
+import ast, re
 from .common import (
     _common_tot_schedule, 
     _common_got_schedule, 
@@ -28,16 +28,16 @@ actions = {
         "preconditions": "",
         "effects": "A new node is created with the merged sorted list, connected to the selected nodes.",
     },
-    # "refine": {
-    #     "description": "Refine the sorting of a list or sublist.",
-    #     "preconditions": "The selected node must have been scored.",
-    #     "effects": "A new node is created with a refined sorting of the selected node, connected to the selected node.",
-    # },
-    # "score": {
-    #     "description": "Count the number of mistakes in the node.",
-    #     "preconditions": "",
-    #     "effects": "The node is annotated with a score, which is the number of mistakes. The node may also be annotated with a feedback dictionary. The missing_elements key indicates the number of elements that are missing from the sorted list. The extra_elements key indicates the number of elements that are in the sorted list but not in the original list.",
-    # },
+    "refine": {
+        "description": "Refine the sorting of a list or sublist.",
+        "preconditions": "The selected node must have been scored.",
+        "effects": "A new node is created with a refined sorting of the selected node, connected to the selected node.",
+    },
+    "score": {
+        "description": "Count the number of mistakes in the node.",
+        "preconditions": "",
+        "effects": "The node is annotated with a score, which is the number of mistakes. The node may also be annotated with a feedback dictionary. The missing_elements key indicates the number of elements that are missing from the sorted list. The extra_elements key indicates the number of elements that are in the sorted list but not in the original list.",
+    },
     "keepbest": {
         "description": "Out of the selected nodes, keep the one with the highest score, and delete the rest.",
         "preconditions": "The selected nodes must have been scored.",
@@ -610,16 +610,29 @@ To fix the incorrectly sorted list follow these steps:
 2. Iterate through the incorrectly sorted list and add or remove numbers as needed to make the frequency of each number in the incorrectly sorted list match the frequency of that number in the input list.
 </Approach>
 
-Your output should be in the following format:
+Your output should be in the following format. The reason should be wrapped by <reason> tags and the output should be wrapped by <output> tags:
+
 <example>
+
 Input: [3, 7, 0, 2, 8, 1, 2, 2, 2, 4, 7, 8, 5, 5, 3, 9]
 Incorrectly Sorted: [0, 0, 0, 0, 0, 1, 2, 2, 3, 3, 4, 4, 4, 5, 5, 7, 7, 8, 8, 9, 9, 9, 9]
-Reason: The incorrectly sorted list contains four extra 0s, two extra 4s and three extra 9s and is missing two 2s.
-Output: [0, 1, 2, 2, 2, 2, 3, 3, 4, 5, 5, 7, 7, 8, 8, 9]
+
+Output: 
+
+<reason>
+The incorrectly sorted list contains four extra 0s, two extra 4s and three extra 9s and is missing two 2s.
+</reason>
+
+<output>
+[0, 1, 2, 2, 2, 2, 3, 3, 4, 5, 5, 7, 7, 8, 8, 9]
+</output>
+
 </example>
 
 Input: {input}
 Incorrectly Sorted: {incorrectly_sorted}
+
+Output:
 """
 
 async def async_refine(
@@ -686,6 +699,13 @@ def refine(
         if node in nodes_to_refine:
             original = graph.nodes[int(node)]["original"]
             output = outs[node][0]
+
+            # Parse with regex
+            try:
+                reason = re.search(r"<reason>(.*?)</reason>", output).group(1)
+                output = re.search(r"<output>(.*?)</output>", output).group(1)
+            except:
+                output = outs[node][0]
         else:
             original, output = refined_nodes[node]["original"], refined_nodes[node]["thought"]
 
@@ -783,6 +803,24 @@ def keepbest(
     return common_keepbest(graph, nodes, model)
 
 
+aggregate2_prompt = """<Instruction> Merge the following 2 sorted lists of length X and Y into one sorted list of length X + Y using a merge sort style approach.
+Only output the final merged list without any additional text or thoughts!:</Instruction>
+
+<Approach>
+To merge the two lists in a merge-sort style approach, follow these steps:
+1. Compare the first element of both lists.
+2. Append the smaller element to the merged list and move to the next element in the list from which the smaller element came.
+3. Repeat steps 1 and 2 until one of the lists is empty.
+4. Append the remaining elements of the non-empty list to the merged list.
+</Approach>
+
+Merge the following two lists into one sorted list:
+1: {input1}
+2: {input2}
+
+Merged list:
+"""
+
 aggregate_prompt = """<Instruction> Merge the following sorted lists of lengths X, ..., Z into one sorted list of length X + ... + Z using a merge sort style approach. Only output the final merged list without any additional text or thoughts!:</Instruction>
 
 <Approach>
@@ -804,12 +842,20 @@ async def async_aggregate(
     model = "",
     multiplicity: int = 1,
 ):
+    if len(nodes) == 2:
+        prompt = aggregate2_prompt.format(
+            input1=graph.nodes[int(nodes[0])]["thought"],
+            input2=graph.nodes[int(nodes[1])]["thought"]
+        )
+    else:
+        prompt = aggregate_prompt.format(
+            inputs=[graph.nodes[int(node)]["thought"] for node in nodes],
+        )
+
     return await asyncio.gather(
         *[
             async_llm(
-                aggregate_prompt.format(
-                    inputs=[graph.nodes[int(node)]["thought"] for node in nodes],
-                ),
+                prompt,
                 model=model
             ) for _ in range(multiplicity)
         ],
