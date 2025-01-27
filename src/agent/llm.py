@@ -2,175 +2,8 @@ import gymnasium as gym
 from llm import llm, async_llm
 import re
 import asyncio
-    
-class IOAgent:
-    def __init__(
-        self,
-        env: gym.Env,
-        task = None,
-    ):
-        self.env = env
-        self.task = task
+from typing import Any
 
-        self.itr = 0
-        self._action_list = [
-            "io",
-            "score",
-            "groundtruth",
-        ]
-
-        self._node_list = [
-            "0",
-            "1",
-            "1",
-        ]
-
-        self.max_iterations = len(self._action_list)
-
-    def get_action(self, obs: tuple[int, int, bool]) -> int:
-        action = {
-            "nodes": self._node_list[self.itr],
-            "operation": self._action_list[self.itr],
-            "explanation": "",
-        }
-        self.itr += 1
-        return action
-    
-class CoTAgent:
-    def __init__(
-        self,
-        env: gym.Env,
-        task,
-        self_consistency: bool = False,
-        num_branches: int = 10,
-    ):
-        self.env = env
-        self.task = task
-
-        self.itr = 0
-        if self_consistency:
-            self._action_list = ["sort_cot"] * num_branches
-            self._action_list += ["score"]
-            self._action_list += ["keepbest"]
-            self._action_list += ["groundtruth"]
-
-            self._node_list = [
-                ["0"] * num_branches,
-                [str(i) for i in range(1, num_branches + 1)],
-                [str(i) for i in range(1, num_branches + 1)],
-                [str(num_branches + 1)],
-            ]
-        else:
-            self._action_list = [
-                "cot",
-                "score",
-                "groundtruth",
-            ]
-            self._node_list = [
-                "0",
-                "1",
-                "1",
-            ]
-
-        self.max_iterations = len(self._action_list)
-
-    def get_action(self, obs: tuple[int, int, bool]) -> int:
-        action = {
-            "nodes": self._node_list[self.itr],
-            "operation": self._action_list[self.itr],
-            "explanation": "",
-        }
-        self.itr += 1
-        return action
-    
-class ToTAgent:
-    def __init__(
-        self,
-        env: gym.Env,
-        task,
-        model: str,
-        problem_definition: str,
-        actions: dict[str, str],
-        width: int,
-        depth: int,
-    ):
-        self.env = env
-        self.task = task 
-
-        self.model = model
-        self.problem_definition = problem_definition
-        self.actions = actions
-        
-        self.width = width
-        self.depth = depth
-
-        schedule = getattr(task, "_tot_schedule")
-        self._actions, self._action_nodes = schedule(
-            width=self.width,
-            depth=self.depth,
-        )
-        self.itr = 0
-
-        self.max_iterations = len(self._actions)
-
-
-    def get_action(self, obs: tuple[int, int, bool]) -> int:
-        action, action_nodes = self._actions[self.itr], self._action_nodes[self.itr]
-        self.itr += 1
-        return {
-            "nodes": action_nodes,
-            "operation": action,
-            "explanation": "",
-        }
-
-class GoTAgent:
-    def __init__(
-        self,
-        env: gym.Env,
-        task,
-        model: str,
-        problem_definition: str,
-        actions: dict[str, str],
-        
-        # GoT parameters
-        branches:int,
-        generate_attempts:int,
-        aggregate_attempts:int,
-        post_aggregate_keepbest: bool,
-        post_aggregate_refine: bool,
-        refine_attempts:int,
-    ):
-        self.env = env
-        self.task = task
-        self.model = model
-
-        schedule = getattr(task, "_got_schedule")
-        self._got_action = 0
-        self._actions, self._action_nodes, self._attempts = schedule(
-            branches,
-            generate_attempts,
-            aggregate_attempts,
-            post_aggregate_keepbest,
-            post_aggregate_refine,
-            refine_attempts,
-        )
-
-        self.problem_definition = problem_definition
-        self.actions = actions
-        self.task_examples = getattr(task, "examples")
-
-        self.max_iterations = len(self._actions)
-
-    def get_action(self, obs: tuple[int, int, bool]) -> int:
-        action = {
-            "nodes": self._action_nodes[self._got_action],
-            "operation": self._actions[self._got_action],
-            "explanation": "",
-            "attempts": self._attempts[self._got_action],
-        }
-        self._got_action += 1
-        return action
-    
 class LLMAgent:
     def __init__(
         self,
@@ -182,7 +15,7 @@ class LLMAgent:
         max_iterations: int = None,
         cot_sc_branches: int = 1,
     ):
-        self.env = env
+        self.environment = env
         self.task = task
         self.model = model
         self.max_iterations = max_iterations if max_iterations is not None else 25
@@ -195,6 +28,9 @@ class LLMAgent:
         self.additional_instructions = getattr(task, "additional_instructions") if hasattr(task, "additional_instructions") else ""
 
         self.action_history = []
+        self.full_action_history = []
+        self.option_history = []
+        self.prompt_history = []
 
         self.prompt = """<Instruction> You are a perspicacious strategy planning agent responsible for solving a problem by guiding the exploration of a thought graph. The starting problem is contained in node 0 of the graph. You must choose a subset of the existing nodes to perform an action on, and define which action to perform.
         
@@ -262,7 +98,7 @@ OUTPUT:"""
 
 
     async def _generate_action(self):
-        graph_repr = self.env.thought_graph_repr()
+        graph_repr = self.environment.thought_graph_repr()
         prompt = self.prompt.format(
             problem_definition=self.problem_definition,
             actions=self._format_action_list(),
@@ -278,10 +114,11 @@ OUTPUT:"""
             res = await async_llm(prompt, model=self.model)
             try:
                 match = re.search(
-                    r"(?i)<analysis>\s*(.*?)\s*</analysis>\s*<next_action>\s*(\w+)\s*</next_action>\s*<nodes>\s*\[([0-9,\s]+)]\s*</nodes>\s*<attempts>\s*([0-9,\s]+)\s*</attempts>\s*<explanation>\s*(.*?)\s*</explanation>",
+                    r"(?i)<analysis>\s*(.*?)\s*</analysis>\s*<next_action>\s*(\w+)\s*</next_action>\s*<nodes>\s*\[?\s*([0-9,\s]+)\s*]?\s*</nodes>\s*<attempts>\s*([0-9,\s]+)\s*</attempts>\s*<explanation>\s*(.*?)\s*</explanation>",
                     res[0],
                     re.DOTALL
                 )
+
 
                 analysis = match.group(1)
                 operation = match.group(2)
@@ -304,11 +141,11 @@ OUTPUT:"""
         if action is None:
             raise Exception("Failed to parse LLM output after 5 attempts")
         
-        return action
+        return action, res[0]
 
 
-    async def get_action(self, obs: tuple[int, int, bool]) -> int:        
-        graph_repr = self.env.thought_graph_repr()
+    async def get_action(self) -> int:        
+        graph_repr = self.environment.thought_graph_repr()
         prompt = self.prompt.format(
             problem_definition=self.problem_definition,
             actions=self._format_action_list(),
@@ -317,6 +154,7 @@ OUTPUT:"""
             graph=graph_repr,
             additional_instructions=self.additional_instructions,
         )
+        self.prompt_history.append(prompt)
 
         action_proposals = []
         
@@ -325,18 +163,26 @@ OUTPUT:"""
             *[self._generate_action() for _ in range(self.cot_sc_branches)], 
             return_exceptions=True
         )
-        action_proposals = [result for result in action_proposals if not isinstance(result, Exception)]
+        llm_outputs = [result[1] for result in action_proposals if not isinstance(result, Exception)]
+        action_proposals = [result[0] for result in action_proposals if not isinstance(result, Exception)]
 
         # Take action with highest occurance
         vote_dict = {}
-        for action in action_proposals:
+        for idx, action in enumerate(action_proposals):
             key = (action["operation"], tuple(action["nodes"]), action["attempts"])
-            vote_dict[key] = vote_dict.get(key, 0) + 1
-        print(f"Action Votes: {vote_dict}")
-        highest_vote = max(vote_dict, key=vote_dict.get)
+            vote_dict[key] = {
+                "count": vote_dict.get(key, {}).get("count", 0) + 1,
+                "completion": llm_outputs[idx],
+            }
+        highest_vote = max(vote_dict, key=lambda k: vote_dict[k]["count"])
+        
+        vd = {k: v["count"] for k, v in vote_dict.items()}
+        print(f"Action Votes: {vd}")
 
+        self.option_history.append(vote_dict)
+
+        # Find a matching explanation
         explanation = ""
-        attempts = 1
         for action in action_proposals:
             if (action["operation"], tuple(action["nodes"]), action["attempts"]) == highest_vote:
                 explanation = action["explanation"]
@@ -347,4 +193,4 @@ OUTPUT:"""
             "attempts": highest_vote[2],
             "explanation": explanation,
         }
-        return action
+        return action, prompt, vote_dict

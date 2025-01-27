@@ -9,6 +9,7 @@ import networkx as nx
 import logging
 import importlib
 import asyncio
+import json
 
 
 logger = logging.getLogger(__name__)
@@ -23,6 +24,7 @@ class GoTEnv(gym.Env):
             max_graph_size: int = 128,
             node_embedding_size: int = 128,
             model: str = "",
+            idx: int = 0,
         ):
 
         self.step_count = 0
@@ -31,6 +33,7 @@ class GoTEnv(gym.Env):
         
         self.problem = problem
         
+        self.task_name = task
         self.task = importlib.import_module(f"tasks.{task}")
         self.model = model
 
@@ -39,6 +42,7 @@ class GoTEnv(gym.Env):
             0, 
             embedding=np.zeros(node_embedding_size)
         )
+        self.idx = idx
 
         self.observation_space = Graph(
             node_space = Box(
@@ -87,7 +91,11 @@ class GoTEnv(gym.Env):
     def thought_graph_repr(self):
         repr = "Nodes:\n"
         for node in self.thought_graph.nodes:
-            repr += f"{node}: {self.thought_graph.nodes[node]}\n"
+            content = self.thought_graph.nodes[node]
+            content = json.dumps(content, indent=4)
+            # content = content.replace("\\n", "\n")
+            repr += f"{node}: {content}\n"
+        
         repr += "Edges:\n"
         for edge in self.thought_graph.edges:
             repr += f"{edge}: {self.thought_graph.edges[edge]}\n"
@@ -98,20 +106,30 @@ class GoTEnv(gym.Env):
 
         # Reinitalize the thought graph
         self.thought_graph = nx.Graph()
+        if self.task_name == "human_eval":
+            kwargs = {
+                "problem": self.problem,
+                "problem_idx": self.idx,
+            }
+        else:
+            kwargs = {
+                "thought": self.problem
+            }
+            
         self.thought_graph.add_node(
             0, 
-            thought = self.problem,
+            **kwargs,
         )
 
-        observation = self._get_obs()
+        # observation = self._get_obs()
         info = self._get_info()
 
-        return observation, info
+        return self.thought_graph, info
     
     def step(
         self, 
         action,
-        max_tries: int = 5,
+        max_tries: int = 1,
     ):
         operation = action["operation"]
         nodes = action["nodes"]
@@ -168,7 +186,6 @@ class GoTEnv(gym.Env):
 
         # An environment is completed if there is a ground truth proposal with a score of 1
         reward = 1 if terminate else 0  # the agent is only reached at the end of the episode
-        observation = self._get_obs()
         info = self._get_info()
 
         self.step_count += 1
@@ -180,4 +197,4 @@ class GoTEnv(gym.Env):
 
         info["score"] = score
         
-        return observation, reward, terminate, truncate, info
+        return reward, terminate, truncate, info
