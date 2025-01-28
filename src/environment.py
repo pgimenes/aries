@@ -11,9 +11,14 @@ import importlib
 import asyncio
 import json
 
+from tasks import HumanEvalAgent
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
+
+agent_map = {
+    "human_eval": HumanEvalAgent,
+}
 
 class GoTEnv(gym.Env):
 
@@ -34,7 +39,11 @@ class GoTEnv(gym.Env):
         self.problem = problem
         
         self.task_name = task
-        self.task = importlib.import_module(f"tasks.{task}")
+        self.reasoning_agent = agent_map.get(task, None)
+        if self.reasoning_agent is None:
+            raise ValueError(f"Task {task} not found in agent map")
+        self.reasoning_agent = self.reasoning_agent()
+
         self.model = model
 
         self.thought_graph = nx.Graph()
@@ -143,9 +152,9 @@ class GoTEnv(gym.Env):
         print(f"Attempts: {multiplicity}")
         print(f"Explanation: {explanation}\n")
 
-        operator = getattr(self.task, operation, None)
+        operator = getattr(self.reasoning_agent, operation, None)
         if operator is None:
-            raise ValueError(f"Operation {operation} not found for task {self.task}")
+            raise ValueError(f"Operation {operation} not found for task {self.reasoning_agent}")
 
         tries = 1
         success = False
@@ -198,3 +207,10 @@ class GoTEnv(gym.Env):
         info["score"] = score
         
         return reward, terminate, truncate, info
+
+    async def async_step(
+        self, 
+        action,
+        max_tries: int = 1,
+    ):
+        return await asyncio.to_thread(self.step, action, max_tries)

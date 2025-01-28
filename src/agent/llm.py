@@ -16,9 +16,9 @@ class LLMAgent:
         cot_sc_branches: int = 1,
     ):
         self.environment = env
-        self.task = task
         self.model = model
         self.max_iterations = max_iterations if max_iterations is not None else 25
+        print(f"Set max iterations to {self.max_iterations}")
         self.cot_sc_branches = cot_sc_branches
 
         # Things injected into the agent prompt
@@ -119,7 +119,6 @@ OUTPUT:"""
                     re.DOTALL
                 )
 
-
                 analysis = match.group(1)
                 operation = match.group(2)
                 nodes = match.group(3)
@@ -174,7 +173,11 @@ OUTPUT:"""
                 "count": vote_dict.get(key, {}).get("count", 0) + 1,
                 "completion": llm_outputs[idx],
             }
-        highest_vote = max(vote_dict, key=lambda k: vote_dict[k]["count"])
+
+        if not vote_dict:
+            raise Exception("No valid actions were sampled")
+        else:
+            highest_vote = max(vote_dict, key=lambda k: vote_dict[k]["count"])
         
         vd = {k: v["count"] for k, v in vote_dict.items()}
         print(f"Action Votes: {vd}")

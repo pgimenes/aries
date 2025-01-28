@@ -1,17 +1,18 @@
+import traceback
+import os
 from tqdm import tqdm
 import argparse
-from environment import GoTEnv
 import importlib
 import pandas as pd
 import json
 import asyncio
-import traceback, os
-import dill as pickle
-from copy import deepcopy
+import dill
+from copy import deepcopy, copy
 
+from environment import GoTEnv
 from agent import LLMAgent, GoTAgent, IOAgent, CoTAgent, ToTAgent, get_agent
 from cli import get_args
-
+from replay import run_replay
 
 ds_map = {
     "aqua": "deepmind/aqua_rat",
@@ -47,6 +48,8 @@ def _run_agent_on_problem(
     agent, 
     environment,
     next_action=None,
+    idx = None,
+    dump_action_tree = True,
 ):
     done = False
     last_score = None
@@ -59,10 +62,11 @@ def _run_agent_on_problem(
         if itr >= getattr(agent, "max_iterations", float('inf')) or attempts > 5:
             break
 
-        # Sample next action
+        # First action was hardcoded
         if next_action is not None:
             action = next_action
-            next_action = None
+        
+        # Sample next action
         else:
 
             if isinstance(agent, LLMAgent):
@@ -70,36 +74,43 @@ def _run_agent_on_problem(
             else:
                 # get state from environment
                 # state = ...
+                breakpoint()
                 action = agent.get_action()
 
         try:
+            
             reward, terminated, truncated, info = environment.step(action)
 
-            # Only update the action history if it ran successfuly
-            if isinstance(agent, LLMAgent):
-                agent.action_history.append(action)
-
-            if info.get("score", None) is not None:
-                last_score = info["score"]
-
-            success = terminated or truncated
-            itr += 1
-            attempts = 1
-
-            # Add to action tree, attaching a copy of the agent
-            # so the graph state can be reconstructed
-            tree_level = (prompt, options, deepcopy(agent))
-            action_tree.append(tree_level)
+            # If just executed the hardcoded action, start sampling in the next round
+            next_action = None
 
         except Exception as exc:
             # LLMAgent can try to recover by fetching another action...
             if isinstance(agent, LLMAgent):
                 print(f"[{attempts}/5] Action {action['operation']} failed on nodes {action['nodes']}, trying again. Error: {exc}")
                 attempts += 1
+                continue
 
             # Other agents need to give up
             else:
                 break
+        
+        # Only update the action history if it ran successfuly
+        if isinstance(agent, LLMAgent):
+            agent.action_history.append(action)
+
+        if info.get("score", None) is not None:
+            last_score = info["score"]
+
+        success = terminated or truncated
+        itr += 1
+        attempts = 1
+
+        # Add to action tree, attaching a copy of the agent
+        # so the graph state can be reconstructed
+        if dump_action_tree:
+            tree_level = (prompt, options, deepcopy(agent)) # agent.environment.thought_graph.nodes
+            action_tree.append(tree_level)
 
     return success, last_score, action_tree
 
@@ -154,7 +165,6 @@ def run(args, data):
 
         problem = get_problem(problem, args)
 
-        # try:
         # Build environment
         environment = GoTEnv(
             problem=problem,
@@ -168,7 +178,15 @@ def run(args, data):
         agent = get_agent(args.agent, environment, task, args, **agent_config)
 
         # Run agent
-        success, score, action_tree = _run_agent_on_problem(agent, environment)
+        try:
+            success, score, action_tree = _run_agent_on_problem(agent, environment)
+        except Exception as exception:
+            stack = traceback.format_exc()
+            print(f"Could not complete problem {idx}: {exception}")
+            print(stack)
+            failures.append(problem)
+            action_trees.append(None)
+            continue
 
         # Update results
         action_trees.append(action_tree)
@@ -183,12 +201,6 @@ def run(args, data):
         if score is not None:
             scores.append(score)
                 
-        # except Exception as exception:
-        #     stack = traceback.format_exc()
-        #     print(f"Could not complete problem {idx}: {exception}")
-        #     print(stack)
-
-        #     failures.append(problem)
 
     # Print summary
     print(f"===============================")
@@ -210,52 +222,7 @@ def run(args, data):
         os.makedirs("results")
 
     with open(f"results/{args.task}_{args.agent}_action_trees.pkl", "wb") as f:
-        pickle.dump(action_trees, f)
-
-def replay(args, data):
-
-    # Fetch action trees
-    with open(f"results/{args.task}_{args.agent}_action_trees.pkl", "rb") as f:
-        action_trees = pickle.load(f)
-
-    for idx, problem in enumerate(data):
-        if idx < args.start or idx > args.end:
-            continue
-
-        print(f"===============================")
-        print(f"Replaying problem {idx}/{len(data)}")
-        print(f"===============================")
-
-        action_tree = action_trees[idx]
-
-        problem = get_problem(problem, args)
-
-        # try:
-        # Build environment
-        for level in action_tree:
-            prompt, options, agent = level
-
-            for action, info in options.items():
-
-                count, completion = info
-                
-                # Run agent
-                action = {
-                    "operation": action[0],
-                    "nodes": action[1],
-                    "attempts": action[2],
-                    "explanation": "",
-                }
-                breakpoint()
-                success, score, _ = _run_agent_on_problem(
-                    agent, 
-                    agent.environment,
-                    next_action=action,
-                )
-
-        # Update results
-        action_trees.append(action_tree)
-
+        dill.dump(action_trees, f)
 
 if __name__ == "__main__":
 
@@ -275,6 +242,6 @@ if __name__ == "__main__":
             data = pd.read_csv(f)
 
     if args.replay:
-        replay(args, data)
+        asyncio.run(run_replay(args, data))
     else:
         run(args, data)

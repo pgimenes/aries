@@ -10,6 +10,11 @@ def get_args():
         "--replay",
         action="store_true",
     )
+    parser.add_argument(
+        "--replays_per_option",
+        type=int,
+        default=10,
+    )
 
     # Main arguments
     parser.add_argument(
@@ -47,6 +52,11 @@ def get_args():
     parser.add_argument(
         "--cot_sc_branches",
         type=int,
+        default=1,
+    )
+    parser.add_argument(
+        "--temperature",
+        type=float,
         default=1,
     )
 

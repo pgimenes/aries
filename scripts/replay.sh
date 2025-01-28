@@ -1,2 +1,2 @@
-python -u src/main.py --task human_eval --agent llm --cot_sc_branches 5 --end 0 --max_iterations 2 &> human_eval_llm.log
+python -u src/main.py --task human_eval --agent llm --cot_sc_branches 5 --end 0 --max_iterations 10 &> human_eval_llm.log
 python -u src/main.py --replay --task human_eval --agent llm --cot_sc_branches 5 --end 0 &> human_eval_llm_replay.log
