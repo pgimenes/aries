@@ -1,1 +1,7 @@
-# reasoning-agent
+<p align="center">
+  <img src="docs/aries.png" width="300">
+</p>
+
+<h1 style="text-align: center;">ARIES: Autonomous Reasoning on Interactive thought graph EnvironmentS</h1>
+
+As we approach the end of scaling laws in Large Language Model (LLM) training, test-time compute scaling has emerged as a transformative paradigm for complex reasoning tasks. Test-time compute scaling approaches can be generalized under the framework of topological reasoning, whereby intermediate solutions are arranged as graphs, on which transformations are performed to explore a solution space. However, prior works rely on pre-determined, task-specific transformation schedules which are subject to a hyperparameter set requiring extensive Bayesian search for high query efficiency. By viewing thought graph transformations as actions in a Markov Decision process, policy agents can be equipped to learn from feedback and tune effective action policies. In particular, LLMs can act as policy agents, collaborating with reasoning agents in a multi-agent architecture. While reasoning agents solve decomposed subproblems, LLM policy agents maintain visibility of the reasoning trace, dynamically adaptating the problem-solving strategy. Using off-the-shelf LLMs with no further training as policy agents can yield up to $3.3\times$ lower error values compared to static schedules in problems with low decomposition depth, as well as obviating any search requirement.
