@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/aries.png" width="300">
+  <img src="docs/aries2.png" width="300">
 </p>
 
 <h1 style="text-align: center;">ARIES: Autonomous Reasoning on Interactive thought graph EnvironmentS</h1>
