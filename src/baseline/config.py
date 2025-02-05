@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 @dataclass
 class Config:
-    model_path: str = "NousResearch/Hermes-3-Llama-3.2-3B"
+    model_path: str = "meta-llama/Llama-3.1-70B-Instruct"
     gpu_memory_utilization: float = (
         0.5  # vllm is allocated 0.5 of GPU memory, the PRM uses the rest
     )
