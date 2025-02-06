@@ -31,6 +31,7 @@ Use this step-by-step format:
 
 Regardless of the approach, always output only code in correct format.
 Do not include any explination, only include them in the necessary comments starting with `#`.
+always enclose the code in ```python and ``` to make it more readable.
 """
 
 CODE_CONTEST_EVAL_PROMPT = """
@@ -52,7 +53,15 @@ Use this step-by-step format:
 
 Regardless of the approach, always output only code in correct format.
 Do not include any explination, only include them in the necessary comments starting with `#`.
-always start with a function definition with respective input variable and end with a return statement.
+always enclose the code in ```python and ``` to make it more readable.
+
+Follow the instruction on input and output condition and format, use input() and print() for input and output respectively.
+Different variables in same set of input will be seperated by space, different set of input will be seperate by a newline character.
+print each set of output on a single line, seperate by newline character.
+Always print the output in the same order as the input.
+start the code with def main(): and end with main()
+
+Start your code from here:
 """
 
 logging.basicConfig(level=logging.INFO)
