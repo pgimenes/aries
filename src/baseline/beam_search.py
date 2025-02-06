@@ -209,14 +209,14 @@ def beam_search(examples, config: Config, llm: LLM, prm: PRM):
     results = {"completions": [], "pred": [], "completion_tokens": [], "scores": []}
 
     for p in problems:
-        print("Problem: ", p)
+        # print("Problem: ", p)
         beams = grouped_results[p]
         completions = [b.current_text for b in beams]
         agg_scores = [
             aggregate_scores(b.all_scores, config.agg_strategy) for b in beams
         ]
-        logger.info(f"Completions: {completions}")
-        logger.info(f"Scores: {agg_scores}")
+        # logger.info(f"Completions: {completions}")
+        # logger.info(f"Scores: {agg_scores}")
         # check if agg_scores is empty, handle special case of empty
         if len(agg_scores) is not 0:
             pred = completions[np.argmax(agg_scores)]

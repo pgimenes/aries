@@ -1,6 +1,7 @@
 import argparse
 import logging
 import json
+from tqdm import tqdm
 
 import torch
 from vllm import LLM
@@ -30,6 +31,28 @@ Use this step-by-step format:
 
 Regardless of the approach, always output only code in correct format.
 Do not include any explination, only include them in the necessary comments starting with `#`.
+"""
+
+CODE_CONTEST_EVAL_PROMPT = """
+Solve the following coding problem efficiently and clearly using **python**:
+
+- For simple problems (2 steps or fewer):
+Provide a concise code solution only without any explination.
+
+- For complex problems (3 steps or more):
+Use this step-by-step format:
+
+# Step 1: [Concise description]
+[Actual line of code]
+
+# Step 2: [Concise description]
+[Actual line of code]
+
+...
+
+Regardless of the approach, always output only code in correct format.
+Do not include any explination, only include them in the necessary comments starting with `#`.
+always start with a function definition with respective input variable and end with a return statement.
 """
 
 logging.basicConfig(level=logging.INFO)
@@ -66,23 +89,41 @@ def main():
         if args.dataset == "openai/openai_humaneval":
             system_prompt = HUMAN_EVAL_PROMPT
             dataset = load_dataset("openai/openai_humaneval")
-            data = dataset["test"]
-            examples = {}
-            # initalize question
-            examples["problem"] = [system_prompt + prompt for prompt in data["prompt"]]
-            examples["task_id"] = data["task_id"]
+            input_dataset = dataset["test"]
+            datas = []
+            for i in range(len(input_dataset)):
+                example = {}
+                example["problem"] = [system_prompt + input_dataset[i]["prompt"]]
+                example["task_id"] = input_dataset[i]["task_id"]
+                datas.append(example)
+        elif args.dataset == "deepmind/code_contests":
+            system_prompt = CODE_CONTEST_EVAL_PROMPT
+            dataset = load_dataset("deepmind/code_contests")
+            input_dataset = dataset["test"]
+            datas = []
+            for i in range(len(input_dataset)):
+                example = {}
+                example["problem"] = [system_prompt + input_dataset[i]["description"]]
+                example["task_id"] = input_dataset[i]["name"]
+                datas.append(example)
 
     # dumpt the example object
-    with open("example.json", "w") as f:
-        json.dump(examples, f)
+    # with open("example.json", "w") as f:
+    #     json.dump(examples, f)
 
     logger.log(logging.INFO, "Starting beam search")
-    beam_search_results = beam_search(examples, llm=llm, prm=prm, config=config)
+    for i in tqdm(range(len(datas)), desc="Processing examples"):
+        example = datas[i]
+        beam_search_result = beam_search(example, llm=llm, prm=prm, config=config)
+        datas[i]["completions"] = beam_search_result["completions"]
+        datas[i]["scores"] = beam_search_result["scores"]
+        datas[i]["pred"] = beam_search_result["pred"]
+        datas[i]["completion_tokens"] = beam_search_result["completion_tokens"]
 
     logger.log(logging.INFO, "Storing result")
     # store results
     with open(args.output, "w") as f:
-        json.dump(beam_search_results, f)
+        json.dump(datas, f)
 
 
 if __name__ == "__main__":
