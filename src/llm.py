@@ -66,7 +66,7 @@ def llm(
     prompt,
     model=None, 
     temperature=1, 
-    max_tokens=1000000, 
+    max_tokens=10000, 
     n=1, 
     stop=None, 
     return_ppl=False

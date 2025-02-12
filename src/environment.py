@@ -155,8 +155,8 @@ class GoTEnv(gym.Env):
                 truncate = False
                 success = True
                 break
-            except:
-                print(f"[{tries}/{max_tries}]: Operation {operation} failed.")
+            except Exception as exc:
+                print(f"[{tries}/{max_tries}]: Operation {operation} failed because: {exc}")
                 tries += 1
 
         if not success:
