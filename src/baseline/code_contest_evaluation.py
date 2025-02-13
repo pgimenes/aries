@@ -11,6 +11,7 @@ from unittest.mock import patch
 
 import datasets
 import signal
+import pandas as pd
 
 class TimeoutException(Exception):
     pass
@@ -20,11 +21,13 @@ def timeout_handler(signum, frame):
 
 def _score_code_contests(
         problem_name,
-        dataset,
+        dataset_df,
         completion,
     ):
 
-        ds_item = dataset.filter(lambda x: x["name"] == problem_name)[0]
+        # find the pandas index from the problem name
+        problem_idx = dataset_df[dataset_df["name"] == problem_name].index[0]
+        ds_item = dataset_df.iloc[problem_idx]
 
         inputs = [inp for inp in ds_item["public_tests"]["input"]]
         inputs += [inp for inp in ds_item["private_tests"]["input"]]
@@ -93,7 +96,7 @@ accuracy_list = []
 
 # we are only evaluating on the test dataset
 code_contest_dataset = datasets.load_dataset("deepmind/code_contests")["test"]
-
+code_contest_dataset_df = code_contest_dataset.to_pandas()
 
 for i in tqdm(range(len(input_data))):
     completion = input_data[i]["completions"][0][0]
@@ -106,7 +109,7 @@ for i in tqdm(range(len(input_data))):
     # work out the problem index from the name from hf dataset
     # combine_solution_idx.append(problem_idx)
     # combine_solution_list.append(completion)
-    output_accuracy = _score_code_contests(problem_name, code_contest_dataset, completion)
+    output_accuracy = _score_code_contests(problem_name, code_contest_dataset_df, completion)
     accuracy_list.append(output_accuracy)
     
 accuracy = sum(accuracy_list) / len(accuracy_list)
