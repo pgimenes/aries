@@ -67,6 +67,7 @@ def get_agent(agent, env, task, args, **kwargs):
             actions = task.actions,
             max_iterations = kwargs.get("max_iterations", 25),
             cot_sc_branches=args.cot_sc_branches,
+            enable_cot=args.enable_cot,
         )
 
 def run(args, data):
@@ -289,6 +290,10 @@ def argparser():
         "--tot_depth", 
         type=int, 
         default=2,
+    )
+    parser.add_argument(
+        "--enable_cot", 
+        action="store_true",
     )
 
     return parser.parse_args()

@@ -181,6 +181,7 @@ class LLMAgent:
         actions: dict[str, str],
         max_iterations: int = None,
         cot_sc_branches: int = 1,
+        enable_cot: bool = False,
     ):
         self.env = env
         self.task = task
@@ -191,12 +192,50 @@ class LLMAgent:
         # Things injected into the agent prompt
         self.problem_definition = problem_definition
         self.actions = actions
-        self.task_examples = getattr(task, "examples")
+        if enable_cot:
+            self.task_examples = getattr(task, "examples")
+        else:
+            self.task_examples = getattr(task, "examples_no_cot")        
         self.additional_instructions = getattr(task, "additional_instructions") if hasattr(task, "additional_instructions") else ""
 
         self.action_history = []
 
-        self.prompt = """<Instruction> You are a perspicacious strategy planning agent responsible for solving a problem by guiding the exploration of a thought graph. The starting problem is contained in node 0 of the graph. You must choose a subset of the existing nodes to perform an action on, and define which action to perform.
+        self.prompt_no_cot = """<Instruction> You are a perspicacious strategy planning agent responsible for solving a problem by guiding the exploration of a thought graph. The starting problem is contained in node 0 of the graph. You must choose a subset of the existing nodes to perform an action on, and define which action to perform.
+        
+Your input is:
+1. The history of all previously taken actions, which nodes the actions were taken on.
+2. A representation of the current thought graph, including all nodes and edges.
+
+Your instructions are:    
+1. Choose the next action to take on the thought graph
+
+2. Choose the node or nodes to perform the action on
+
+3. Specify the number of times to attempt the chosen action on the selected nodes.
+
+Additional instructions:
+- The format of the output should match exactly the examples. The next action should be wrapped by <next_action> tags. The nodes should be wrapped by <nodes> tags. The number of attempts should be wrapped by <attempts> tags.
+
+- If you think one of the nodes contains the correct solution, you can choose the 'groundtruth' operation to compare it with the ground truth. It's possible this node is already in the graph, or you may need to create it by performing other operations.
+
+{additional_instructions}
+
+Problem definition: {problem_definition}
+The following actions are available:
+
+{actions}</Instruction>
+
+{examples}
+
+INPUT:
+
+Previous actions:
+{history}
+Current graph:
+{graph}
+OUTPUT:"""
+
+        self.prompt_cot = """<Instruction> You are a perspicacious strategy planning agent responsible for solving a problem by guiding the exploration of a thought graph. The starting problem is contained in node 0 of the graph. You must choose a subset of the existing nodes to perform an action on, and define which action to perform.
         
 Your input is:
 1. The history of all previously taken actions, which nodes the actions were taken on, and an explanation of the strategy for each action.
@@ -241,13 +280,21 @@ Previous actions:
 Current graph:
 {graph}
 OUTPUT:"""
+        self.prompt = self.prompt_cot if enable_cot else self.prompt_no_cot
+        self.cot = enable_cot
 
     def _format_action_history(self):
-        history = ""
-        for idx, action in enumerate(self.action_history):
-            history += f"Action {idx}: {action['operation']}\n"
-            history += f"Nodes: {[int(node) for node in action['nodes']]}\n"
-            history += f"Explanation: {action['explanation']}\n\n"
+        if self.cot:
+            history = ""
+            for idx, action in enumerate(self.action_history):
+                history += f"Action {idx}: {action['operation']}\n"
+                history += f"Nodes: {[int(node) for node in action['nodes']]}\n"
+                history += f"Explanation: {action['explanation']}\n\n"
+        else:
+            history = ""
+            for idx, action in enumerate(self.action_history):
+                history += f"Action {idx}: {action['operation']}\n"
+                history += f"Nodes: {[int(node) for node in action['nodes']]}\n\n"
         return history
 
     def _format_action_list(self):
@@ -277,25 +324,39 @@ OUTPUT:"""
         while get_action_attempts <= 10:
             res = await async_llm(prompt, model=self.model)
             try:
-                match = re.search(
-                    r"(?i)<analysis>\s*(.*?)\s*</analysis>\s*<next_action>\s*(\w+)\s*</next_action>\s*<nodes>\s*\[([0-9,\s]+)]\s*</nodes>\s*<attempts>\s*([0-9,\s]+)\s*</attempts>\s*<explanation>\s*(.*?)\s*</explanation>",
-                    res[0],
-                    re.DOTALL
-                )
+                if self.cot:
+                    match = re.search(
+                        r"(?i)<analysis>\s*(.*?)\s*</analysis>\s*<next_action>\s*(\w+)\s*</next_action>\s*<nodes>\s*\[([0-9,\s]+)]\s*</nodes>\s*<attempts>\s*([0-9,\s]+)\s*</attempts>\s*<explanation>\s*(.*?)\s*</explanation>",
+                        res[0],
+                        re.DOTALL
+                    )
+                    analysis = match.group(1)
+                    operation = match.group(2)
+                    nodes = match.group(3)
+                    num_attempts = match.group(4)
+                    explanation = match.group(5)
+                    action = {
+                        "analysis": analysis,
+                        "operation": operation,
+                        "nodes": [int(node) for node in nodes.split(",")],
+                        "attempts": int(num_attempts),
+                        "explanation": explanation,
+                    }
+                else:
+                    match = re.search(
+                        r"(?i)<next_action>\s*(\w+)\s*</next_action>\s*<nodes>\s*\[([0-9,\s]+)]\s*</nodes>\s*<attempts>\s*([0-9,\s]+)\s*</attempts>",
+                        res[0],
+                        re.DOTALL
+                    )
 
-                analysis = match.group(1)
-                operation = match.group(2)
-                nodes = match.group(3)
-                num_attempts = match.group(4)
-                explanation = match.group(5)
-
-                action = {
-                    "analysis": analysis,
-                    "operation": operation,
-                    "nodes": [int(node) for node in nodes.split(",")],
-                    "attempts": int(num_attempts),
-                    "explanation": explanation,
-                }
+                    operation = match.group(1)
+                    nodes = match.group(2)
+                    num_attempts = match.group(3)
+                    action = {
+                        "operation": operation,
+                        "nodes": [int(node) for node in nodes.split(",")],
+                        "attempts": int(num_attempts),
+                    }
                 break
             except Exception as exc:
                 print(f"[{get_action_attempts} / 5] Failed to parse LLM output: {exc}")
@@ -321,30 +382,45 @@ OUTPUT:"""
         action_proposals = []
         
         # Gather action proposals, ignoring exceptions
-        action_proposals = await asyncio.gather(
-            *[self._generate_action() for _ in range(self.cot_sc_branches)], 
-            return_exceptions=True
-        )
-        action_proposals = [result for result in action_proposals if not isinstance(result, Exception)]
+        while True:
+            action_proposals = await asyncio.gather(
+                *[self._generate_action() for _ in range(self.cot_sc_branches)], 
+                return_exceptions=True
+            )
+            # print(f"Action Proposals: {action_proposals}")
+            action_proposals = [result for result in action_proposals if not isinstance(result, Exception)]
 
-        # Take action with highest occurance
-        vote_dict = {}
-        for action in action_proposals:
-            key = (action["operation"], tuple(action["nodes"]), action["attempts"])
-            vote_dict[key] = vote_dict.get(key, 0) + 1
-        print(f"Action Votes: {vote_dict}")
+            # Take action with highest occurance
+            vote_dict = {}
+            for action in action_proposals:
+                key = (action["operation"], tuple(action["nodes"]), action["attempts"])
+                vote_dict[key] = vote_dict.get(key, 0) + 1
+            print(f"Action Votes: {vote_dict}")
+
+            if vote_dict:
+                break
+
+        # get vote
         highest_vote = max(vote_dict, key=vote_dict.get)
 
-        explanation = ""
-        attempts = 1
-        for action in action_proposals:
-            if (action["operation"], tuple(action["nodes"]), action["attempts"]) == highest_vote:
-                explanation = action["explanation"]
+        if self.cot:
+            explanation = ""
+            attempts = 1
+            for action in action_proposals:
+                if (action["operation"], tuple(action["nodes"]), action["attempts"]) == highest_vote:
+                    explanation = action["explanation"]
 
-        action = {
-            "operation": highest_vote[0],
-            "nodes": list(highest_vote[1]),
-            "attempts": highest_vote[2],
-            "explanation": explanation,
-        }
+            action = {
+                "operation": highest_vote[0],
+                "nodes": list(highest_vote[1]),
+                "attempts": highest_vote[2],
+                "explanation": explanation
+            }
+        else:
+            action = {
+                "operation": highest_vote[0],
+                "nodes": list(highest_vote[1]),
+                "attempts": highest_vote[2],
+            }
+
         return action

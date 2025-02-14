@@ -362,7 +362,130 @@ We are continuing the strategy outlined in step 1. Currently, the list in node 0
 </example>""",
 ]
 
-examples = "\n".join(minimal_examples)
+
+# this is the final example prompt that removed action of score and refine.
+minimal_examples_no_cot = [
+    """<example>
+INPUT:
+Previous actions:
+
+Step 1: split
+Nodes: [0]
+
+Step 2: sort
+Nodes: [1, 2]
+
+Step 3: aggregate
+Nodes: [3, 4]
+
+Current graph:
+
+Nodes:
+0: {'thought': '[0, 0, 5, 9, 0, 7, 9, 9, 1, 2, 6, 1, 1, 9, 0, 1, 3, 5, 2, 3, 5, 6, 0, 2, 7, 4, 6, 2, 9, 7, 5, 9]'}
+1: {'thought': [0, 0, 5, 9, 0, 7, 9, 9, 1, 2, 6, 1, 1, 9, 0, 1], 'score': None}
+2: {'thought': [3, 5, 2, 3, 5, 6, 0, 2, 7, 4, 6, 2, 9, 7, 5, 9], 'score': None}
+3: {'thought': '[0, 0, 0, 0, 1, 1, 1, 1, 2, 5, 6, 7, 9, 9, 9, 9]', 'score': 0, 'original': [0, 0, 5, 9, 0, 7, 9, 9, 1, 2, 6, 1, 1, 9, 0, 1]}
+4: {'thought': '[0, 2, 2, 2, 3, 3, 4, 5, 5, 5, 6, 6, 7, 7, 9, 9]', 'score': 0, 'original': [3, 5, 2, 3, 5, 6, 0, 2, 7, 4, 6, 2, 9, 7, 5, 9]}
+5: {'thought': '[0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 4, 5, 5, 5, 5, 6, 6, 6, 7, 7, 7, 9, 9, 9, 9, 9, 9]', 'score': 0}
+
+Edges:
+(0, 1): {}
+(0, 2): {}
+(1, 3): {}
+(2, 4): {}
+(3, 5): {}
+(4, 5): {}
+
+OUTPUT:
+
+<next_action>
+groundtruth
+</next_action>
+
+<nodes>
+[5]
+</nodes>
+
+<attempts>
+1
+</attempts>
+
+</example>""",
+]
+
+
+# this is the final example prompt that removed action of score and refine.
+minimal_examples_not_successful = [
+    """<example>
+INPUT:
+Previous actions:
+
+Step 1: split
+Nodes: [0]
+Explanation: To solve this problem, we should decompose node 0 into smaller sublists and sort them individually, since sorting smaller sublists is less likely to introduce errors. The strategy will be to decompose into lists, sort them individually, then score each sorted sublist to identify whether any mistakes were introduced. Once we find successfully sorted sublists, we can start merging them to find the sorted version of node 0. 
+
+Step 2: sort
+Nodes: [1, 2]
+Explanation: We are continuing the strategy outlined in step 1. Currently, the list in node 0 has been split into sublists in nodes 1 and 2. The next step is to sort each of these sublists individually. We will start by attempting to sort each sublist once. Next, we will score each sorting attempt to identify any errors. If any errors are found, we may need to perform additional sorting attempts until a correct sorting is achieved.
+
+Step 3: aggregate
+Nodes: [3, 4]
+Explanation: We are continuing the strategy outlined in step 1. Currently, the list in node 0 has been split into sublists in nodes 1 and 2. Nodes 3 and 4 are sorted correctly sorted versions of nodes 1 and 2, so we can now aggregate them to find the sorted version of node 0. We will start by performing a single aggregation attempt.If any mistakes are found, we may need to perform additional aggregation attempts until a correct solution is achieved.
+
+Current graph:
+
+Nodes:
+0: {'thought': '[0, 0, 5, 9, 0, 7, 9, 9, 1, 2, 6, 1, 1, 9, 0, 1, 3, 5, 2, 3, 5, 6, 0, 2, 7, 4, 6, 2, 9, 7, 5, 9]'}
+1: {'thought': [0, 0, 5, 9, 0, 7, 9, 9, 1, 2, 6, 1, 1, 9, 0, 1], 'score': None}
+2: {'thought': [3, 5, 2, 3, 5, 6, 0, 2, 7, 4, 6, 2, 9, 7, 5, 9], 'score': None}
+3: {'thought': '[0, 0, 0, 0, 1, 1, 1, 1, 2, 5, 6, 7, 9, 9, 9, 9]', 'score': 0, 'original': [0, 0, 5, 9, 0, 7, 9, 9, 1, 2, 6, 1, 1, 9, 0, 1]}
+4: {'thought': '[0, 2, 2, 2, 3, 3, 4, 5, 5, 5, 6, 6, 7, 7, 9, 9]', 'score': 0, 'original': [3, 5, 2, 3, 5, 6, 0, 2, 7, 4, 6, 2, 9, 7, 5, 9]}
+5: {'thought': '[0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 4, 5, 5, 5, 5, 6, 6, 6, 7, 7, 7, 9, 9, 9, 9, 9, 9]', 'score': 0}
+
+Edges:
+(0, 1): {}
+(0, 2): {}
+(1, 3): {}
+(2, 4): {}
+(3, 5): {}
+(4, 5): {}
+
+OUTPUT:
+
+<analysis>
+A. Action history: The current strategy is to decompose the initial list into smaller sublists, sort them individually, then merge them to produce a solution to the original problem. In step 1, the list was decomposed into sublists. In step 2, the sublists were sorted. In step 3, the correctly sorted sublists were aggregated. 
+
+B. Graph state: The graph currently has 6 nodes and 6 edges. Node 0 has the initial problem. Nodes 1 and 2 represent sublists of the original list, obtained in step 1. Nodes 3 and 4 were obtained in step 2, and they represent attempted sortings of the sublists in nodes 1 and 2. Nodes 3 and 4 both have a score of 0, indicating the attempted sortings are correct. Node 5 is the result of aggregating nodes 3 and 4, obtained in step 4. The score of node 5 is 0, indicating the aggregation is correct. 
+
+C. Strategy analysis: The strategy is successful, since the sublists in nodes 1 and 2 were correctly sorted into nodes 3 and 4. The aggregation of nodes 3 and 4 in node 5 was also successful.
+
+D. Next Action Options  
+    1. If the aggregation is correct and you believe the problem has been solved correctly, you can take the ground truth action to finalize the solution.  
+
+    2. If the aggregation is incorrect, you should try different actions to correct it.
+</analysis>
+
+<next_action>
+groundtruth
+</next_action>
+
+<nodes>
+[5]
+</nodes>
+
+<attempts>
+1
+</attempts>
+
+<explanation>
+We are continuing the strategy outlined in step 1. Currently, the list in node 0 has been split into sublists in nodes 1 and 2. Nodes 3 and 4 are sorted sublists derived from nodes 1 and 2, respectively. Their score is 0, meaning their sorting is correct. Node 5 is the result of aggregating nodes 3 and 4. We should compare the sorted list in node 5 with the ground truth to determine if the aggregation was successful. If the sorted list in node 5 matches the ground truth, we have successfully solved the problem. Otherwise, we may need to perform additional aggregation attempts until a correct solution is achieved.
+</explanation>
+
+</example>""",
+]
+
+examples = "\n".join(minimal_examples_not_successful)
+examples_no_cot = "\n".join(minimal_examples_no_cot)
 
 # Implementation
 
