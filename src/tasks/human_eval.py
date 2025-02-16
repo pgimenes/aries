@@ -1,8 +1,8 @@
 from llm import llm, async_llm
 from .common import (
-    _common_tot_schedule, 
-    _common_got_schedule, 
-    common_keepbest, 
+    _common_tot_schedule,
+    _common_got_schedule,
+    common_keepbest,
     PARSE_OUT_DICT,
 )
 import asyncio
@@ -48,10 +48,11 @@ actions = {
 
 examples = [""]
 
+
 class HumanEvalAgent:
     def __init__(
         self,
-        temperature = None,
+        temperature=None,
     ):
 
         self.temperature = temperature if temperature is not None else 1.0
@@ -178,10 +179,10 @@ assert celsius_to_fahrenheit(0) == 32
 
 <feedback>
 Traceback (most recent call last):
-  File "/home/pedrogimenes/find-closest-pair.py", line 13, in <module>
+  File "/home/user/find-closest-pair.py", line 13, in <module>
     assert celsius_to_fahrenheit(0) == 32
            ^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/pedrogimenes/find-closest-pair.py", line 11, in celsius_to_fahrenheit
+  File "/home/user/find-closest-pair.py", line 11, in celsius_to_fahrenheit
     return (celcius * 9/5) + 32
             ^^^^^^^
 NameError: name 'celcius' is not defined. Did you mean: 'celsius'?
@@ -208,8 +209,8 @@ Now you go.
         self,
         graph,
         nodes,
-        model = "",
-        run_async = False,
+        model="",
+        run_async=False,
         multiplicity: int = 1,
     ):
 
@@ -218,7 +219,8 @@ Now you go.
                 self.split_prompt.format(input=graph.nodes[int(node)]["problem"]),
                 model=model,
                 temperature=self.temperature,
-            )[0] for node in nodes
+            )[0]
+            for node in nodes
         }
 
         for node in nodes:
@@ -229,19 +231,29 @@ Now you go.
             next_thought = next_thought.replace("</output>", "")
 
             # get the skeleton
-            skeleton = re.search(r"<skeleton>(.*?)</skeleton>", next_thought, re.DOTALL).group(1)
-            graph.nodes[int(node)]["solution"] = graph.nodes[int(node)]["problem"] + skeleton
+            skeleton = re.search(
+                r"<skeleton>(.*?)</skeleton>", next_thought, re.DOTALL
+            ).group(1)
+            graph.nodes[int(node)]["solution"] = (
+                graph.nodes[int(node)]["problem"] + skeleton
+            )
 
             # get the content of each <function> tag
-            functions = re.findall(r"<function>(.*?)</function>", next_thought, re.DOTALL)
+            functions = re.findall(
+                r"<function>(.*?)</function>", next_thought, re.DOTALL
+            )
 
             for function in functions:
 
                 # get the docstring
-                docstring = re.search(r"<docstring>(.*?)</docstring>", function, re.DOTALL).group(1)
+                docstring = re.search(
+                    r"<docstring>(.*?)</docstring>", function, re.DOTALL
+                ).group(1)
 
                 # get the testcases
-                testcases = re.search(r"<testcase>(.*?)</testcase>", function, re.DOTALL).group(1)
+                testcases = re.search(
+                    r"<testcase>(.*?)</testcase>", function, re.DOTALL
+                ).group(1)
 
                 idx = max(list(graph.nodes)) + 1
                 graph.add_node(
@@ -254,49 +266,45 @@ Now you go.
 
         return graph, False
 
-    
-
     async def async_generate(
         self,
         graph,
         nodes,
-        model = "",
+        model="",
         multiplicity: int = 1,
     ):
         return await asyncio.gather(
             *[
                 async_llm(
-                    self.solve_prompt.format(
-                        input=graph.nodes[int(node)]["problem"]
-                    ),
+                    self.solve_prompt.format(input=graph.nodes[int(node)]["problem"]),
                     model=model,
                     temperature=self.temperature,
-                ) for node in nodes
+                )
+                for node in nodes
             ],
         )
 
     def generate(
         self,
-        graph, 
+        graph,
         nodes,
-        model = "",
-        run_async = True,
+        model="",
+        run_async=True,
         multiplicity: int = 1,
     ):
-        
+
         # 1. Get LLM responses
         if run_async:
             outs = asyncio.run(self.async_generate(graph, nodes, model=model))
-            outs = {
-                nodes[i]: outs[i] for i in range(len(nodes))
-            }
+            outs = {nodes[i]: outs[i] for i in range(len(nodes))}
         else:
             outs = {
                 node: llm(
                     sort_prompt.format(input=graph.nodes[int(node)]["problem"]),
                     model=model,
                     temperature=self.temperature,
-                )[0] for node in nodes
+                )[0]
+                for node in nodes
             }
 
         # 2. Update graph
@@ -308,7 +316,9 @@ Now you go.
             next_thought = next_thought.replace("<output>", "")
             next_thought = next_thought.replace("</output>", "")
 
-            graph.nodes[int(node)]["solution"] = graph.nodes[int(node)]["problem"].replace("pass", "") + next_thought
+            graph.nodes[int(node)]["solution"] = (
+                graph.nodes[int(node)]["problem"].replace("pass", "") + next_thought
+            )
 
             # Reset feedback and score
             graph.nodes[int(node)]["feedback"] = None
@@ -320,7 +330,7 @@ Now you go.
         self,
         graph,
         nodes,
-        model = "",
+        model="",
         multiplicity: int = 1,
     ):
         return await asyncio.gather(
@@ -332,24 +342,23 @@ Now you go.
                     ),
                     model=model,
                     temperature=self.temperature,
-                ) for node in nodes
+                )
+                for node in nodes
             ],
         )
 
     def refine(
         self,
-        graph, 
+        graph,
         nodes,
-        model = "",
-        run_async = True,
+        model="",
+        run_async=True,
         multiplicity: int = 1,
     ):
         # 1. Get LLM responses
         if run_async:
             outs = asyncio.run(self.async_refine(graph, nodes, model=model))
-            outs = {
-                nodes[i]: outs[i] for i in range(len(nodes))
-            }
+            outs = {nodes[i]: outs[i] for i in range(len(nodes))}
         else:
             outs = {
                 node: llm(
@@ -359,7 +368,8 @@ Now you go.
                     ),
                     model=model,
                     temperature=self.temperature,
-                )[0] for node in nodes
+                )[0]
+                for node in nodes
             }
 
         # 2. Update graph
@@ -386,10 +396,12 @@ Now you go.
     ):
         node_idx = int(node)
         graph_node = graph.nodes[node_idx]
-        
+
         problem_idx = graph.nodes[0].get("problem_idx", None)
         if problem_idx is None:
-            raise ValueError("Problem index not found in the node: {}".format(graph_node))
+            raise ValueError(
+                "Problem index not found in the node: {}".format(graph_node)
+            )
 
         sample = [
             {
@@ -400,18 +412,18 @@ Now you go.
         write_jsonl("sample.jsonl", sample)
 
         out = evaluate_functional_correctness("sample.jsonl", ignore_incomplete=True)
-        
+
         score = 1 if out["pass@1"] == 1.0 else 0
-        
+
         graph.nodes[node_idx]["score"] = score
 
         return graph, score
 
     def score(
         self,
-        graph, 
+        graph,
         nodes,
-        model = "",
+        model="",
         multiplicity: int = 1,
     ):
 
@@ -421,10 +433,10 @@ Now you go.
             # If scoring the full problem, fall back to HumanEval code
             if node in ["0", 0] or graph.nodes[int(node)].get("is_solution", False):
                 graph, score = self._score_full_solution(graph, node)
-                
+
                 if score > 0:
                     any_pass = True
-                
+
                 continue
 
             # Evaluate testcases
@@ -442,6 +454,7 @@ Now you go.
                 except Exception as exc:
                     # get traceback
                     from traceback import format_exc
+
                     feedback = format_exc()
                     graph.nodes[int(node)]["score"] = 0
                     graph.nodes[int(node)]["feedback"] = feedback
@@ -454,9 +467,9 @@ Now you go.
 
     def keepbest(
         self,
-        graph, 
+        graph,
         nodes,
-        model = "",
+        model="",
         multiplicity: int = 1,
     ):
         # Score all non-scored nodes
@@ -465,20 +478,20 @@ Now you go.
 
     def aggregate(
         self,
-        graph, 
+        graph,
         nodes,
-        model = "",
+        model="",
         multiplicity: int = 1,
         run_async: bool = False,
     ):
-        
+
         # 1. Collect code snippets and testcases
         code = ""
         testcases = ""
         for node in nodes:
             code += graph.nodes[int(node)]["solution"]
             testcases += graph.nodes[int(node)].get("testcases", "")
-        
+
         # add new node
         idx = max(list(graph.nodes)) + 1
 
@@ -502,16 +515,16 @@ Now you go.
         self,
         graph,
         nodes,
-        model = "",
-        run_async = False,
+        model="",
+        run_async=False,
         multiplicity: int = 1,
     ):
         return self.generate(graph, nodes, model)
 
     def cot(
         self,
-        graph, 
+        graph,
         nodes,
-        model = "",
+        model="",
     ):
         raise NotImplementedError("Cot not implemented for human eval")
