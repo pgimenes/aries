@@ -9,9 +9,11 @@ class PolicyAgent:
         self,
         env: gym.Env,
         task,
+        max_iterations: int = None,
     ):
         self.env = env
         self.task = task
+        self.max_iterations = max_iterations
 
     def get_action(
         self, 

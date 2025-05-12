@@ -24,7 +24,7 @@ class LLMAgent:
         # Things injected into the agent prompt
         self.problem_definition = problem_definition
         self.actions = actions
-        self.task_examples = getattr(task, "examples")
+        self.task_examples = "\n".join(getattr(task, "examples"))
         self.additional_instructions = getattr(task, "additional_instructions") if hasattr(task, "additional_instructions") else ""
 
         self.action_history = []

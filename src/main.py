@@ -10,7 +10,7 @@ import dill
 from copy import deepcopy, copy
 
 from environment import GoTEnv
-from agent import LLMAgent, GoTAgent, IOAgent, CoTAgent, ToTAgent, get_agent
+from agent import LLMAgent, GoTAgent, IOAgent, CoTAgent, ToTAgent, RLAgent, get_agent
 from cli import get_args
 from replay import run_replay
 
@@ -20,6 +20,7 @@ ds_map = {
     "aime": "qq8933/AIME_1983_2024",
     "mmlu": "cais/mmlu",
     "human_eval": "openai/openai_humaneval",
+    "code_contests": "deepmind/code_contests",
 }
 
 def get_problem(problem, args):
@@ -39,6 +40,8 @@ def get_problem(problem, args):
         }
     elif args.task == "human_eval":
         problem = problem["prompt"]
+    elif args.task == "code_contests":
+        problem = problem["description"]
     else:
         raise Exception("Invalid task")
 
@@ -49,17 +52,17 @@ def _run_agent_on_problem(
     environment,
     next_action=None,
     idx = None,
-    dump_action_tree = True,
+    dump_action_tree = False,
 ):
-    done = False
     last_score = None
     itr = 0    
     attempts = 1
 
     action_tree = []
     
-    while not done:
+    while True:
         if itr >= getattr(agent, "max_iterations", float('inf')) or attempts > 5:
+            print(f"Failed to solve problem {idx} after {itr} iterations, {attempts} attempts.")
             break
 
         # First action was hardcoded
@@ -71,38 +74,32 @@ def _run_agent_on_problem(
 
             if isinstance(agent, LLMAgent):
                 action, prompt, options = asyncio.run(agent.get_action())
+            elif isinstance(agent, GoTAgent):
+                obs = environment.thought_graph
+                action = agent.get_action(obs)
             else:
-                # get state from environment
-                # state = ...
-                breakpoint()
-                action = agent.get_action()
+                obs = environment.thought_graph
+                action = agent.get_action(obs)
 
-        try:
-            
-            reward, terminated, truncated, info = environment.step(action)
+        success = False
+        # try:
+        reward, success, _, info = environment.step(action)
 
-            # If just executed the hardcoded action, start sampling in the next round
-            next_action = None
+        # If just executed the hardcoded action, start sampling in the next round
+        next_action = None
 
-        except Exception as exc:
-            # LLMAgent can try to recover by fetching another action...
-            if isinstance(agent, LLMAgent):
-                print(f"[{attempts}/5] Action {action['operation']} failed on nodes {action['nodes']}, trying again. Error: {exc}")
-                attempts += 1
-                continue
-
-            # Other agents need to give up
-            else:
-                break
-        
         # Only update the action history if it ran successfuly
         if isinstance(agent, LLMAgent):
             agent.action_history.append(action)
+        elif isinstance(agent, GoTAgent):
+            agent.queries += 1
 
         if info.get("score", None) is not None:
             last_score = info["score"]
 
-        success = terminated or truncated
+        if success:
+            break
+
         itr += 1
         attempts = 1
 
@@ -111,6 +108,11 @@ def _run_agent_on_problem(
         if dump_action_tree:
             tree_level = (prompt, options, deepcopy(agent)) # agent.environment.thought_graph.nodes
             action_tree.append(tree_level)
+                
+        # except Exception as exc:
+        #     # LLMAgent can try to recover by fetching another action...
+        #     print(f"[{attempts}/5] Action {action['operation']} failed on nodes {action['nodes']}, trying again. Error: {exc}")
+        #     attempts += 1
 
     return success, last_score, action_tree
 
@@ -135,11 +137,12 @@ def run(args, data):
 
         # GoT parameters
         "got_branches": args.got_branches,
+        "got_decompose_attempts": args.got_decompose_attempts,
         "got_generate_attempts": args.got_generate_attempts,
+        "got_refine_attempts": args.got_refine_attempts,
         "got_aggregate_attempts": args.got_aggregate_attempts,
         "got_post_aggregate_keepbest": args.got_post_aggregate_keepbest,
         "got_post_aggregate_refine": args.got_post_aggregate_refine,
-        "got_refine_attempts": args.got_refine_attempts,
     }
 
     if args.task == "keyword_counting":
@@ -149,6 +152,7 @@ def run(args, data):
     successes = []
     failures = []
     scores = []
+    queries = []
     action_trees = []
 
     for idx, problem in enumerate(iterator):
@@ -171,26 +175,41 @@ def run(args, data):
             task= taskname,
             model=args.model,
             idx = idx,
+            temperature = args.temperature,
         )
         state, _ = environment.reset()
         
         # Build agent
-        agent = get_agent(args.agent, environment, task, args, **agent_config)
+        agent = get_agent(
+            args.agent, 
+            environment, 
+            task, 
+            args, 
+            **agent_config,
+        )
 
         # Run agent
+        score = None
         try:
             success, score, action_tree = _run_agent_on_problem(agent, environment)
         except Exception as exception:
             stack = traceback.format_exc()
             print(f"Could not complete problem {idx}: {exception}")
             print(stack)
+            
             failures.append(problem)
             action_trees.append(None)
-            continue
 
-        # Update results
-        action_trees.append(action_tree)
+            # Report number of queries, even if failed
+            if isinstance(agent, GoTAgent):
+                queries.append(agent.queries)
+                print(f"Queries: {agent.queries}")
+
+            continue
         
+
+        # Update counters based on results
+        action_trees.append(action_tree)
         if success:
             print(f"Result: success")
             successes.append(problem)
@@ -198,9 +217,17 @@ def run(args, data):
             print(f"Result: failure")
             failures.append(problem)
         
+        # If didn't receive any error metrics yet from the environment, set this
+        # to the number of testcases in the dataset
+        if score is None and taskname == "human_eval":
+            score = environment.ds["test"][idx]["test"].count("assert")
+            
         if score is not None:
             scores.append(score)
-                
+
+        if isinstance(agent, GoTAgent):
+            queries.append(agent.queries)
+            print(f"Queries: {agent.queries}")
 
     # Print summary
     print(f"===============================")
@@ -216,6 +243,12 @@ def run(args, data):
     else:
         print(f"Scores for each problem not available")
 
+    if len(queries) > 0:
+        avg_queries = sum(queries) / len(queries)
+        print(f"Average queries: {avg_queries}")
+    else:
+        print(f"Queries for each problem not available")
+
     # Save results
     # mkdir results if it doesn't exist
     if not os.path.exists("results"):
@@ -230,10 +263,12 @@ if __name__ == "__main__":
     
     if args.task in [
         "human_eval",
+        "code_contests"
     ]:
+        split = "train" if args.task == "code_contests" else "test"
         from datasets import load_dataset
         ds_name = ds_map[args.task]
-        data = load_dataset(ds_name, split="test")
+        data = load_dataset(ds_name, split=split)
     elif args.task == "crosswords":
         with open("data/crosswords.json") as f:
             data = json.load(f)

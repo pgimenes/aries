@@ -4,8 +4,16 @@ from .got import GoTAgent
 from .io import IOAgent
 from .llm import LLMAgent
 from .tot import ToTAgent
+from .rl import RLAgent
 
 def get_agent(agent, env, task, args, **kwargs):
+    if agent == "rl":
+        return RLAgent(
+            env=env,
+            task=task,
+            max_iterations=kwargs.get("max_iterations"),
+        )
+    
     if agent == "io":
         return IOAgent(
             env=env,
@@ -33,9 +41,11 @@ def get_agent(agent, env, task, args, **kwargs):
         return GoTAgent(
             env=env,
             task = task,
+            max_iterations = kwargs.get("max_iterations", 25),
 
             # GoT parameters
             branches=kwargs.get("got_branches"),
+            decompose_attempts=kwargs.get("got_decompose_attempts"),
             generate_attempts=kwargs.get("got_generate_attempts"),
             aggregate_attempts=kwargs.get("got_aggregate_attempts"),
             post_aggregate_keepbest=kwargs.get("got_post_aggregate_keepbest"),

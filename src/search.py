@@ -37,52 +37,56 @@ def objective(trial):
     score_file_path = f'{directory}/trial_{trial.number}'
 
     search_space = {
-        "branches": [2, 4, 8, 16],
-        "got_post_aggregate_keepbest": [True, False],
-        "got_post_aggregate_refine": [True, False],
-        "got_generate_attempts": [1, 5, 10, 15, 20],
-        "got_aggregate_attempts": [1, 5, 10, 15, 20],
-        "got_refine_attempts": [1, 5, 10, 15, 20],
+        # "branches": [2, 4, 8, 16],
+        # "got_post_aggregate_keepbest": [True, False],
+        # "got_post_aggregate_refine": [True, False],
+        "got_decompose_attempts": [1, 5, 10],
+        "got_generate_attempts": [1, 5, 10],
+        "got_aggregate_attempts": [1, 5, 10],
+        "got_refine_attempts": [1, 5, 10],
     }
 
     # Update search space based on task
-    if task in ["sorting32", "set_intersection32"]:
-        search_space["branches"] = [2]
-    elif task in ["sorting64", "set_intersection64"]:
-        search_space["branches"] = [4]
-    elif task in ["sorting128", "set_intersection128"]:
-        search_space["branches"] = [8]
-    elif task == "keyword_counting":
-        search_space["branches"] = [16]
-        search_space["got_aggregate_attempts"] = [1]
-    else:
-        raise ValueError(f"Unknown task: {task}")
+    # if task in ["sorting32", "set_intersection32"]:
+    #     search_space["branches"] = [2]
+    # elif task in ["sorting64", "set_intersection64"]:
+    #     search_space["branches"] = [4]
+    # elif task in ["sorting128", "set_intersection128"]:
+    #     search_space["branches"] = [8]
+    # elif task == "keyword_counting":
+    #     search_space["branches"] = [16]
+    #     search_space["got_aggregate_attempts"] = [1]
+    # else:
+    #     raise ValueError(f"Unknown task: {task}")
 
     # Sample the parameters
-    got_branches = trial.suggest_categorical("branches", search_space["branches"])
-    got_post_aggregate_keepbest = trial.suggest_categorical("got_post_aggregate_keepbest", search_space["got_post_aggregate_keepbest"])
-    got_post_aggregate_refine = trial.suggest_categorical("got_post_aggregate_refine", search_space["got_post_aggregate_refine"])
+    # got_branches = trial.suggest_categorical("branches", search_space["branches"])
+    got_decompose_attempts = trial.suggest_categorical("got_decompose_attempts", search_space["got_decompose_attempts"])
     got_generate_attempts = trial.suggest_categorical("got_generate_attempts", search_space["got_generate_attempts"])
     got_aggregate_attempts = trial.suggest_categorical("got_aggregate_attempts", search_space["got_aggregate_attempts"])
     got_refine_attempts = trial.suggest_categorical("got_refine_attempts", search_space["got_refine_attempts"])
+    
+    # got_branches = 1
+    # got_post_aggregate_keepbest = trial.suggest_categorical("got_post_aggregate_keepbest", search_space["got_post_aggregate_keepbest"])
+    # got_post_aggregate_refine = trial.suggest_categorical("got_post_aggregate_refine", search_space["got_post_aggregate_refine"])
 
-    if not (got_post_aggregate_keepbest or got_post_aggregate_refine):
-        raise optuna.TrialPruned("At least one of post_aggregate_keepbest or post_aggregate_refine must be True.")
+    # if not (got_post_aggregate_keepbest or got_post_aggregate_refine):
+    #     raise optuna.TrialPruned("At least one of post_aggregate_keepbest or post_aggregate_refine must be True.")
 
     # Count the queries required according to the parameters
-    actions, action_nodes, action_attempts = _common_got_schedule(
-        branches = got_branches,
-        generate_action = "sort",
-        generate_attempts = got_generate_attempts,
-        aggregate_attempts = got_aggregate_attempts,
-        post_aggregate_keepbest = got_post_aggregate_keepbest,
-        post_aggregate_refine = got_post_aggregate_refine,
-        refine_attempts = got_refine_attempts,
-    )
-    query_count = count_queries(actions, action_nodes, action_attempts)
+    # actions, action_nodes, action_attempts = _common_got_schedule(
+    #     branches = 2,
+    #     generate_action = "sort",
+    #     generate_attempts = got_generate_attempts,
+    #     aggregate_attempts = got_aggregate_attempts,
+    #     post_aggregate_keepbest = got_post_aggregate_keepbest,
+    #     post_aggregate_refine = got_post_aggregate_refine,
+    #     refine_attempts = got_refine_attempts,
+    # )
+    # query_count = count_queries(actions, action_nodes, action_attempts)
 
-    if query_count > 300:
-        raise optuna.TrialPruned("Too many queries.")
+    # if query_count > 300:
+    #     raise optuna.TrialPruned("Too many queries.")
 
     # Prepare the command with the selected parameters
     command = [
@@ -90,37 +94,45 @@ def objective(trial):
         '--task', task,
         '--agent', 'got',
         '--start', '1',
-        '--end', '10',
-        '--got_branches', str(got_branches),
+        '--end', '5',
+        # '--got_branches', str(got_branches),
+        '--got_decompose_attempts', str(got_decompose_attempts),
         '--got_generate_attempts', str(got_generate_attempts),
         '--got_aggregate_attempts', str(got_aggregate_attempts),
         '--got_refine_attempts', str(got_refine_attempts),
     ]
-    if got_post_aggregate_keepbest:
-        command.append('--got_post_aggregate_keepbest')
-    if got_post_aggregate_refine:
-        command.append('--got_post_aggregate_refine')
+    
+    # if got_post_aggregate_keepbest:
+    #     command.append('--got_post_aggregate_keepbest')
+    # if got_post_aggregate_refine:
+    #     command.append('--got_post_aggregate_refine')
+
+    print(f"command: {' '.join(command)}")
 
     # Dump the parameters
     with open(f"{score_file_path}-spec.log", 'w') as log_file:
         log_file.write(f"========== Trial {trial.number} ==========\n")
-        log_file.write(f"alpha: {alpha}\n")
-        log_file.write(f"got_branches: {got_branches}\n")
-        log_file.write(f"got_post_aggregate_keepbest: {got_post_aggregate_keepbest}\n")
-        log_file.write(f"got_post_aggregate_refine: {got_post_aggregate_refine}\n")
+        log_file.write(f"got_decompose_attempts: {got_decompose_attempts}\n")
         log_file.write(f"got_generate_attempts: {got_generate_attempts}\n")
         log_file.write(f"got_aggregate_attempts: {got_aggregate_attempts}\n")
         log_file.write(f"got_refine_attempts: {got_refine_attempts}\n")
-        log_file.write(f"query count: {query_count}\n")
+        # log_file.write(f"got_branches: {got_branches}\n")
+        # log_file.write(f"got_post_aggregate_keepbest: {got_post_aggregate_keepbest}\n")
+        # log_file.write(f"got_post_aggregate_refine: {got_post_aggregate_refine}\n")
 
     # Run the command and get the score
-    print(f"Running trial {trial.number} with query count: {query_count}")
+    print(f"Running trial {trial.number}")
     with open(f"{score_file_path}.log", 'w') as log_file:
         _ = subprocess.run(command, stdout=log_file, stderr=log_file, text=True)
 
-    with open(f"{score_file_path}.log", 'r') as score_file:
-        content = score_file.read()
-        score = float(re.search(r'Average score: (\d+\.\d+)', content).group(1))
+    try:
+        with open(f"{score_file_path}.log", 'r') as score_file:
+            content = score_file.read()
+            score = float(re.search(r'Average score: (\d+\.\d+)', content).group(1))
+            query_count = int(re.search(r'Average queries: (\d+)', content).group(1))
+    except:
+        score = 100
+        query_count = 1000
 
     # Calculate the cost
     cost = alpha * score + (1 - alpha) * query_count
@@ -128,10 +140,8 @@ def objective(trial):
     # Dump results summary
     with open(f"{score_file_path}-spec.log", 'a') as log_file:
         log_file.write(f"\n========== Results ==========\n")
-        log_file.write(f"alpha: {alpha}\n")
         log_file.write(f"query count: {query_count}\n")
         log_file.write(f"score: {score}\n")
-        log_file.write(f"cost: {cost}\n")
 
     return score, query_count
 

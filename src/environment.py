@@ -1,5 +1,6 @@
 from typing import Optional
 import numpy as np
+import re
 
 import gymnasium as gym
 import gymnasium.spaces as spaces
@@ -11,13 +12,16 @@ import importlib
 import asyncio
 import json
 
-from tasks import HumanEvalAgent
+from datasets import load_dataset
+
+from tasks import HumanEvalAgent, CodeContestsAgent
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 agent_map = {
     "human_eval": HumanEvalAgent,
+    "code_contests": CodeContestsAgent,
 }
 
 class GoTEnv(gym.Env):
@@ -30,6 +34,7 @@ class GoTEnv(gym.Env):
             node_embedding_size: int = 128,
             model: str = "",
             idx: int = 0,
+            temperature: float = 1.0,
         ):
 
         self.step_count = 0
@@ -42,7 +47,12 @@ class GoTEnv(gym.Env):
         self.reasoning_agent = agent_map.get(task, None)
         if self.reasoning_agent is None:
             raise ValueError(f"Task {task} not found in agent map")
-        self.reasoning_agent = self.reasoning_agent()
+        self.reasoning_agent = self.reasoning_agent(
+            temperature=temperature,
+        )
+
+        if self.task_name == "human_eval":
+            self.ds = load_dataset("openai/openai_humaneval")
 
         self.model = model
 
@@ -115,10 +125,21 @@ class GoTEnv(gym.Env):
 
         # Reinitalize the thought graph
         self.thought_graph = nx.Graph()
-        if self.task_name == "human_eval":
+        if self.task_name in ["human_eval", "code_contests"]:
+
+            if self.task_name == "human_eval":
+                fn_name = re.findall(r'def (.*)\(', self.problem)[0]
+                testcases = self.ds["test"][self.idx]["test"]
+                testcases = re.findall(r'assert (.*)\n', testcases)
+                testcases = [test.replace("candidate(", f"{fn_name}(") for test in testcases]
+
+            else:
+                testcases = []
+
             kwargs = {
                 "problem": self.problem,
                 "problem_idx": self.idx,
+                "testcases": testcases,
             }
         else:
             kwargs = {
@@ -138,8 +159,9 @@ class GoTEnv(gym.Env):
     def step(
         self, 
         action,
-        max_tries: int = 1,
+        max_tries: int = 5,
     ):
+
         operation = action["operation"]
         nodes = action["nodes"]
         multiplicity = action.get("attempts", 1)
@@ -159,10 +181,19 @@ class GoTEnv(gym.Env):
         tries = 1
         success = False
 
-        while tries <= max_tries:
-            # try:
-            # Currently aggregate operation is the only one that accepts a multiplicity
-            if operation == "aggregate":
+        # while tries <= max_tries:
+        #     try:
+        # Currently aggregate operation is the only one that accepts a multiplicity
+        if operation == "aggregate" or self.task_name in ["human_eval", "code_contests"]:
+            kwargs = {
+                "graph": self.thought_graph,
+                "nodes": nodes,
+                "model": self.model,
+                "multiplicity": multiplicity,
+            }
+            self.thought_graph, terminate = operator(**kwargs)
+        else:
+            for _ in range(multiplicity):
                 kwargs = {
                     "graph": self.thought_graph,
                     "nodes": nodes,
@@ -170,20 +201,11 @@ class GoTEnv(gym.Env):
                     "multiplicity": multiplicity,
                 }
                 self.thought_graph, terminate = operator(**kwargs)
-            else:
-                for _ in range(multiplicity):
-                    kwargs = {
-                        "graph": self.thought_graph,
-                        "nodes": nodes,
-                        "model": self.model,
-                        "multiplicity": multiplicity,
-                    }
-                    self.thought_graph, terminate = operator(**kwargs)
-            truncate = False
-            success = True
-            break
-            # except:
-            #     print(f"[{tries}/{max_tries}]: Operation {operation} failed.")
+        truncate = False
+        success = True
+        # break
+            # except Exception as exc:
+            #     print(f"[{tries}/{max_tries}]: Operation {operation} failed because: {exc}.")
             #     tries += 1
 
         if not success:

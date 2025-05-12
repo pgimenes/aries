@@ -10,7 +10,9 @@ from copy import copy
 from human_eval.data import write_jsonl
 from human_eval.evaluation import evaluate_functional_correctness
 import regex as re
-from traceback import format_exc
+from unittest.mock import patch
+import io
+import contextlib
 import signal
 
 class TimeoutException(Exception):
@@ -54,71 +56,20 @@ actions = {
     },
 }
 
-examples = [
-    """
-<example>
-INPUT:
+examples = [""]
 
-Previous actions:
-Action 0: generate
-Nodes: [0]
-Explanation: We are generating a solution for the problem in node 0. This is the first step in solving the problem. We will use the generated solution as a starting point and refine it if necessary.
-
-
-Current graph:
-Nodes:
-0: {
-    "problem": "from typing import List\n\n\ndef has_close_elements(numbers: List[float], threshold: float) -> bool:\n    \"\"\" Check if in given list of numbers, are any two numbers closer to each other than\n    given threshold.\n    >>> has_close_elements([1.0, 2.0, 3.0], 0.5)\n    False\n    >>> has_close_elements([1.0, 2.8, 3.0, 4.0, 5.0, 2.0], 0.3)\n    True\n    \"\"\"\n",
-    "problem_idx": 0,
-    "solution": "from typing import List\n\n\ndef has_close_elements(numbers: List[float], threshold: float) -> bool:\n    \"\"\" Check if in given list of numbers, are any two numbers closer to each other than\n    given threshold.\n    >>> has_close_elements([1.0, 2.0, 3.0], 0.5)\n    False\n    >>> has_close_elements([1.0, 2.8, 3.0, 4.0, 5.0, 2.0], 0.3)\n    True\n    \"\"\"\n\n    return any(abs(numbers[i] - numbers[j]) < threshold for i in range(len(numbers)) for j in range(i+1, len(numbers)))\n",
-    "feedback": null,
-    "score": null
-}
-Edges:
-
-OUTPUT:
-
-<analysis>
-The current state of the thought graph is that we have generated a solution for the problem in node 0. The previous action, "generate", was taken on node 0 with the strategy of using the generated solution as a starting point and refining it if necessary.
-
-The nodes and edges in the graph are:
-- Node 0: This node contains the problem statement, a generated solution, and no feedback or score.
-- Edges: There are no edges in the graph, as this is a single node.
-
-The strategy outlined in the previous action is pending, as we do not have any feedback or score on the generated solution. The next step would be to score the solution to determine its accuracy.
-
-Alternative actions that could be taken next are:
-- score: Score the solution in node 0 to determine its accuracy.
-- refine: Refine the solution in node 0 without scoring it first.
-- split: Split the problem into subproblems, but this would not make sense given that we have already generated a solution for the problem.
-
-</analysis>
-
-<next_action>score</next_action>
-
-<nodes>[0]</nodes>
-
-<attempts>1</attempts>
-
-<explanation>
-We choose the "score" action on node 0 because we need to determine the accuracy of the generated solution. This is the next logical step in solving the problem, as it will give us feedback on the solution's correctness. If the solution scores high, we can continue refining it. If it scores low, we may need to explore alternative solutions. This action continues the current strategy of using the generated solution as a starting point and refining it if necessary.
-</explanation>
-
-</example>  
-"""
-]
-
-class HumanEvalAgent:
+class CodeContestsAgent:
     def __init__(
         self,
         temperature = None,
     ):
 
+        from datasets import load_dataset
+        self.ds = load_dataset("deepmind/code_contests")
         self.temperature = temperature if temperature is not None else 1.0
-
         self.split_prompt = """<instruction>You are a programming expert. Your role is to outline a skeleton implementation of the function according to the docstring. This skeleton should call functions that are so far not defined. Then, you should list all the functions that need to be defined.
 
-The output should be within <output> ... </output> tags, as shown in the example. You should first output the skeleton in <skeleton> tags. Then, for each function in the skeleton, output its header and docstring in <function> tags. Also include test cases for each function in <testcase> tags.
+The output should be within <output> ... </output> tags, as shown in the example. You should first output the skeleton in <skeleton> tags. Then, for each function in the skeleton, output its header and docstring in <function> tags. Make sure the docstring for each subfunction contains all required information to solve it independently.  Also include test cases for each function in <testcase> tags.
 </instruction>
 
 <example>
@@ -185,7 +136,7 @@ Now you go.
 </prompt>
 """
 
-        self.solve_prompt = """<instruction>You are a programming expert. Your role is to complete the function definition according to the docstring.
+        self.solve_prompt = """<instruction>You are a programming expert taking part in a programming competition. Given the input description, write a Python 3 function that solves the problem.
 
 The output should be within <output> ... </output> tags, as shown in the example. Do not repeat the docstring in the output.
 </instruction>
@@ -193,15 +144,18 @@ The output should be within <output> ... </output> tags, as shown in the example
 <example>
 
 <prompt>
-def truncate_number(number: float) -> float: 
-    \"\"\" Given a positive floating point number, it can be decomposed into and integer part (largest integer smaller than given number) and decimals (leftover part always smaller than 1). Return the decimal part of the number. 
-    >>> truncate_number(3.5) 
-    0.5 
-    \"\"\"
+Vipul is a hardworking super-hero who maintains the bracket ratio of all the strings in the world. Recently he indulged himself in saving the string population so much that he lost his ability for checking brackets (luckily, not permanently ).Being his super-hero friend help him in his time of hardship. Input The first line of the input contains an integer T denoting the number of test cases. The description of T test cases follows. The first line of each test case contains a single string S denoting the string to be checked. Output For each test case, output a single line printing "YES" or "NO" (without " " and in uppercase only) , denoting if the brackets in the given string is balanced or not . Constraints 1 ≤ T ≤ 10 1 ≤ length of S ≤ 60 Example Input: 3 ((())) (())() ()(() Output: YES YES NO   Explanation Example is self-explanatory.
 </prompt>
 
 <output>
-    return number % 1.0
+for item in range(input()):
+    try:
+        eval(input())
+        print 'YES'
+    except TypeError:
+        print 'YES'
+    except:
+        print 'NO'
 </output>
 
 </example>
@@ -291,10 +245,6 @@ Now you go.
             # get the skeleton
             skeleton = re.search(r"<skeleton>(.*?)</skeleton>", next_thought, re.DOTALL).group(1)
             graph.nodes[int(node)]["solution"] = graph.nodes[int(node)]["problem"] + skeleton
-    
-            # find the name of the function
-            function_name = re.search(r"def (.*?)\(", graph.nodes[int(node)]["problem"]).group(1)
-            graph.nodes[int(node)]["function_name"] = function_name
 
             # get the content of each <function> tag
             functions = re.findall(r"<function>(.*?)</function>", next_thought, re.DOTALL)
@@ -323,7 +273,7 @@ Now you go.
     async def async_generate(
         self,
         graph,
-        nodes,
+        node,
         model = "",
         multiplicity: int = 1,
     ):
@@ -335,7 +285,7 @@ Now you go.
                     ),
                     model=model,
                     temperature=self.temperature,
-                ) for node in nodes
+                ) for _ in range(multiplicity)
             ],
         )
 
@@ -347,36 +297,67 @@ Now you go.
         run_async = True,
         multiplicity: int = 1,
     ):
-        
-        # 1. Get LLM responses
-        if run_async:
-            outs = asyncio.run(self.async_generate(graph, nodes, model=model))
-            outs = {
-                nodes[i]: outs[i] for i in range(len(nodes))
-            }
-        else:
-            outs = {
-                node: llm(
-                    sort_prompt.format(input=graph.nodes[int(node)]["problem"]),
-                    model=model,
-                    temperature=self.temperature,
-                )[0] for node in nodes
-            }
-
-        # 2. Update graph
         nodes_to_score = []
         for node in nodes:
-            next_thought = outs[node][0]
+            
+            # 1. Get LLM responses
+            if run_async:
+                outs = asyncio.run(
+                    self.async_generate(
+                        graph, 
+                        node, 
+                        model=model,
+                        multiplicity=multiplicity,
+                    )
+                )
+            else:
+                outs = {
+                    sol: llm(
+                        self.solve_prompt.format(
+                            input=graph.nodes[int(node)]["problem"]
+                        ),
+                        model=model,
+                        temperature=self.temperature,
+                    )[0] for sol in range(multiplicity)
+                }
 
-            # remove the <output> tags
-            next_thought = next_thought.replace("<output>", "")
-            next_thought = next_thought.replace("</output>", "")
+            for idx, out in enumerate(outs):
+                next_thought = out[0]
 
-            graph.nodes[int(node)]["solution"] = graph.nodes[int(node)]["problem"].replace("pass", "") + next_thought
+                # remove the <ooututput> tags
+                next_thought = next_thought.replace("<output>", "")
+                next_thought = next_thought.replace("</output>", "")
+                next_thought = next_thought.replace("```python", "")
+                next_thought = next_thought.replace("```", "")
 
-            # Reset feedback and score
-            graph.nodes[int(node)]["feedback"] = None
-            graph.nodes[int(node)]["score"] = None
+                # graph.nodes[int(node)]["solution"] = graph.nodes[int(node)]["problem"].replace("pass", "") + next_thought
+
+                # # Reset feedback and score
+                # graph.nodes[int(node)]["feedback"] = None
+                # graph.nodes[int(node)]["score"] = None
+
+                # generate new node
+                idx = max(list(graph.nodes)) + 1
+                kwargs = {
+                    "problem": graph.nodes[int(node)]["problem"],
+                    "solution": next_thought,
+                    "score": None,
+                    "feedback": None,
+                }
+                
+                if node in ["0", 0]:
+                    kwargs["is_solution"] = True
+                
+                graph.add_node(
+                    idx,
+                    **kwargs,
+                )
+                graph.add_edge(int(node), idx)
+
+                nodes_to_score.append(idx)
+
+            # for node in nodes_to_score:
+            #     graph, _ = self.score(graph, [node], model=model)
 
         return graph, False
 
@@ -427,7 +408,6 @@ Now you go.
             }
 
         # 2. Update graph
-        nodes_to_score = []
         for node in nodes:
             sol = outs[node][0]
 
@@ -441,6 +421,9 @@ Now you go.
             graph.nodes[int(node)]["feedback"] = None
             graph.nodes[int(node)]["score"] = None
 
+        # 3. Re-score all the refined nodes
+        graph, _ = self.score(graph, nodes, model=model)
+
         return graph, False
 
     def _score_full_solution(
@@ -450,24 +433,72 @@ Now you go.
     ):
         node_idx = int(node)
         graph_node = graph.nodes[node_idx]
-        
+
+        # Get problem idx
         problem_idx = graph.nodes[0].get("problem_idx", None)
         if problem_idx is None:
             raise ValueError("Problem index not found in the node: {}".format(graph_node))
 
-        sample = [
-            {
-                "task_id": f"HumanEval/{problem_idx}",
-                "completion": graph_node["solution"],
-            }
-        ]
-        write_jsonl("sample.jsonl", sample)
+        ds_item = self.ds["train"][problem_idx]
 
-        out = evaluate_functional_correctness("sample.jsonl", ignore_incomplete=True)
-        
-        score = 1 if out["pass@1"] == 1.0 else 0
-        
-        graph.nodes[node_idx]["score"] = score
+        inputs = [inp for inp in ds_item["public_tests"]["input"]]
+        inputs += [inp for inp in ds_item["private_tests"]["input"]]
+
+        outputs = [out for out in ds_item["public_tests"]["output"]]
+        outputs += [out for out in ds_item["private_tests"]["output"]]
+
+        if not inputs:
+            print(f"No testcases for problem {problem_idx}")
+            graph_node["score"] = 0
+            return graph, False
+
+        # Evaluate the solution
+        code = graph_node["solution"]
+
+        outs = []
+        successes = []
+        failures = []
+        for idx, user_input in enumerate(inputs):
+            user_input = user_input.split("\n")
+
+            # Setup timeout for 1 minute (60 seconds)
+            signal.signal(signal.SIGALRM, timeout_handler)
+            signal.alarm(60)  # Set alarm for 60 seconds
+
+            output_capture = io.StringIO()
+            # remove empty items ''
+            with patch("builtins.input", side_effect=user_input):
+                with contextlib.redirect_stdout(output_capture), contextlib.redirect_stderr(output_capture):
+                    try:
+                        exec(code)
+                    
+                    except TimeoutException:
+                        print("Execution exceeded time limit of 1 minute.")
+
+                    except Exception as exc:
+                        print(exc)
+
+                    finally: 
+                        signal.alarm(0)
+                
+                captured_out = output_capture.getvalue().strip()
+                outs.append(captured_out)
+
+                if captured_out == outputs[idx].strip():
+                    successes.append(idx)
+                else:
+                    failures.append(idx)
+
+        if failures:
+            feedback = f"Failed testcases: {failures}"
+            score = 0
+        elif successes:
+            feedback = None
+            score = 1
+        else:
+            raise ValueError("No testcases passed or failed")
+
+        graph_node["score"] = score
 
         return graph, score
 
@@ -482,53 +513,38 @@ Now you go.
         any_pass = False
         for node in nodes:
 
-            # # If scoring the full problem, fall back to HumanEval code
-            # if node in ["0", 0] or graph.nodes[int(node)].get("is_solution", False):
-            #     graph, score = self._score_full_solution(graph, node)
+            # If scoring the full problem, fall back to HumanEval code
+            if node in ["0", 0] or graph.nodes[int(node)].get("is_solution", False):
+                graph, score = self._score_full_solution(graph, node)
                 
-            #     if score > 0:
-            #         any_pass = True
+                graph.nodes[int(node)]["score"] = score
+                if score > 0:
+                    any_pass = True
                 
-            #     continue
+                continue
 
             # Evaluate testcases
-            testcases = graph.nodes[int(node)].get("testcases", [])
-            
-            # testcases is a string when called on a subproblem solution
-            if not isinstance(testcases, list):
-                try:
-                    testcases = re.findall(r'assert (.*)\n', testcases)
-                except:
-                    testcases = []
-
-            num_failed = 0
-            graph.nodes[int(node)]["feedback"] = ""
-            for testcase in testcases:
-
+            testcases = graph.nodes[int(node)].get("testcases", None)
+            if testcases is not None:
                 program = (
                     "from typing import *\n"
                     + graph.nodes[int(node)].get("solution", "")
-                    + f"\nassert {testcase}"
+                    + testcases
                 )
-
-                # Set the timeout to 60 seconds
-                # This will get triggered if the code requires more inputs than necessary
-                signal.signal(signal.SIGALRM, timeout_handler)
-                signal.alarm(60)  # Set alarm for 60 seconds
 
                 try:
                     exec(program, {})
+                    graph.nodes[int(node)]["score"] = 1
                 except Exception as exc:
                     # get traceback
-                    num_failed += 1
-                    print(f"testcase {testcase} failed with exception: {exc}")
-                    graph.nodes[int(node)]["feedback"] += f"\ntestcase {testcase} failed with exception: {exc}"
+                    from traceback import format_exc
+                    feedback = format_exc()
+                    graph.nodes[int(node)]["score"] = 0
+                    graph.nodes[int(node)]["feedback"] = feedback
                     continue
-
-                finally:
-                    signal.alarm(0)
-
-            graph.nodes[int(node)]["score"] = num_failed
+            else:
+                print("No testcases found for node: ", node)
+                graph.nodes[int(node)]["score"] = 0
 
         return graph, False
 
@@ -554,18 +570,10 @@ Now you go.
         
         # 1. Collect code snippets and testcases
         code = ""
+        testcases = ""
         for node in nodes:
             code += graph.nodes[int(node)]["solution"]
-
-        testcases = ""
-        if "0" not in nodes and 0 not in nodes:
-            for node in nodes:
-                tests = graph.nodes[int(node)].get("testcases", "")
-                if isinstance(tests, list):
-                    tests = "\n".join(tests)
-                testcases += tests
-        else:
-            testcases = graph.nodes[0].get("testcases", "")
+            testcases += graph.nodes[int(node)].get("testcases", "")
         
         # add new node
         idx = max(list(graph.nodes)) + 1
@@ -591,10 +599,16 @@ Now you go.
         graph,
         nodes,
         model = "",
-        run_async = False,
+        run_async = True,
         multiplicity: int = 1,
     ):
-        return self.generate(graph, nodes, model)
+        return self.generate(
+            graph, 
+            nodes, 
+            model,
+            run_async,
+            multiplicity,
+        )
 
     def cot(
         self,
@@ -603,6 +617,30 @@ Now you go.
         model = "",
     ):
         raise NotImplementedError("Cot not implemented for human eval")
+
+
+    def count(
+        self,
+        graph, 
+        nodes,
+        model = "",
+        run_async = True,
+        multiplicity: int = 1,
+    ):
+        # Out of the selected nodes, count how many have a score of 1 and print the percentage
+
+        count = 0
+        for node in nodes:
+            if graph.nodes[int(node)]["score"] == 1:
+                count += 1
+
+        rate = count / len(nodes)
+        
+        # Append to csv file
+        problem_idx = graph.nodes[0].get("problem_idx", None)
+        with open("code_contests_probabilities.csv", "a") as f:
+            f.write(f"{problem_idx},{rate}\n")
+        return graph, count > 0
 
     def groundtruth(
         self,
@@ -619,10 +657,10 @@ Now you go.
             # Only score if not already scored
             score = graph.nodes[int(node)].get("score", None)
             if score is None:
-                _, score = self.score(graph, [node], model=model)
+                _, score = self._score_full_solution(graph, node)
 
             # Skip checking other nodes if a solution was found
-            if score == 0:
+            if score:
                 graph.nodes[int(node)]["groundtruth"] = True
                 return graph, True
 

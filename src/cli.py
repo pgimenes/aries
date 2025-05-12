@@ -67,6 +67,11 @@ def get_args():
         default=2,
     )
     parser.add_argument(
+        "--got_decompose_attempts", 
+        type=int, 
+        default=1,
+    )
+    parser.add_argument(
         "--got_generate_attempts", 
         type=int, 
         default=2,
@@ -77,17 +82,17 @@ def get_args():
         default=2,
     )
     parser.add_argument(
+        "--got_refine_attempts", 
+        type=int, 
+        default=2,
+    )
+    parser.add_argument(
         "--got_post_aggregate_keepbest", 
         action="store_true",
     )
     parser.add_argument(
         "--got_post_aggregate_refine", 
         action="store_true",
-    )
-    parser.add_argument(
-        "--got_refine_attempts", 
-        type=int, 
-        default=2,
     )
 
     # ToT Agent
@@ -100,6 +105,13 @@ def get_args():
         "--tot_depth", 
         type=int, 
         default=2,
+    )
+
+    # IO Agent
+    parser.add_argument(
+        "--multiplicity", 
+        type=int, 
+        default=1,
     )
 
     return parser.parse_args()

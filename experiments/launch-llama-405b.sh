@@ -1,3 +1,44 @@
+# human eval
+tmux new-session -d -s human-eval-io "conda deactivate; conda activate sglang; cd reasoning-agent; python -u src/main.py --task human_eval --agent io &> experiments/logs/llama-3.1-405b/human-eval-io.log"
+tmux new-session -d -s human-eval-got25 "conda deactivate; conda activate sglang; cd reasoning-agent; \
+                                python -u src/main.py \
+                                --task human_eval \
+                                --agent got \
+                                --got_decompose_attempts 5 \
+                                --got_generate_attempts 10 \
+                                --got_aggregate_attempts 10 \
+                                --got_refine_attempts 10 \
+                                --max_iterations 50 \
+                                &> experiments/logs/llama-3.1-405b/human-eval-got25.log"
+tmux new-session -d -s human-eval-got50 "conda deactivate; conda activate sglang; cd reasoning-agent; \
+                                python -u src/main.py \
+                                --task human_eval \
+                                --agent got \
+                                --got_decompose_attempts 5 \
+                                --got_generate_attempts 10 \
+                                --got_aggregate_attempts 10 \
+                                --got_refine_attempts 10 \
+                                --max_iterations 50 \
+                                &> experiments/logs/llama-3.1-405b/human-eval-got50.log"
+tmux new-session -d -s human-eval-got100 "conda deactivate; conda activate sglang; cd reasoning-agent; \
+                                python -u src/main.py \
+                                --task human_eval \
+                                --agent got \
+                                --got_decompose_attempts 1 \
+                                --got_generate_attempts 1 \
+                                --got_aggregate_attempts 1 \
+                                --got_refine_attempts 1 \
+                                --max_iterations 50 \
+                                &> experiments/logs/llama-3.1-405b/human-eval-got100.log"
+tmux new-session -d -s human-eval-llm "conda deactivate; conda activate sglang; cd aries; \
+                                python -u src/main.py \
+                                --task human_eval \
+                                --agent llm \
+                                --max_iterations 50 \
+                                --cot_sc_branches 5 \
+                                &> experiments/logs/llama-3.1-405b/human-eval-llm.log"
+
+
 # sorting32
 tmux new-session -d -s sorting32-io "conda deactivate; conda activate sglang; cd reasoning-agent; python -u src/main.py --task sorting32 --agent io &> experiments/logs/llama-3.1-405b/sorting32-io.log"
 tmux new-session -d -s sorting32-cot "conda deactivate; conda activate sglang; cd reasoning-agent; python -u src/main.py --task sorting32 --agent cot &> experiments/logs/llama-3.1-405b/sorting32-cot.log"
