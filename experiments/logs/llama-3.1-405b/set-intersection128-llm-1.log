@@ -7545,6 +7545,6 @@ Action failed, trying again. Action: {'nodes': [9, 12, 13, 14, 18, 26, 42, 61, 6
 [2 / 5] Failed to parse LLM output: 'NoneType' object has no attribute 'group'
 [3 / 5] Failed to parse LLM output: 'NoneType' object has no attribute 'group'
 [4 / 5] Failed to parse LLM output: 'NoneType' object has no attribute 'group'
-> /home/pedrogimenes/reasoning-agent/src/agent.py(279)get_action()
+> /home/user/reasoning-agent/src/agent.py(279)get_action()
 -> analysis = match.group(1)
 (Pdb) 

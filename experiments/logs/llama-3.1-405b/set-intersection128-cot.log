@@ -9,21 +9,21 @@ Nodes: 0
 Explanation: 
 
 Traceback (most recent call last):
-  File "/home/pedrogimenes/reasoning-agent/src/main.py", line 212, in <module>
+  File "/home/user/reasoning-agent/src/main.py", line 212, in <module>
     run(args, data)
-  File "/home/pedrogimenes/reasoning-agent/src/main.py", line 130, in run
+  File "/home/user/reasoning-agent/src/main.py", line 130, in run
     obs, reward, terminated, truncated, info = env.step(action)
                                                ^^^^^^^^^^^^^^^^
-  File "/home/pedrogimenes/reasoning-agent/src/environment.py", line 124, in step
+  File "/home/user/reasoning-agent/src/environment.py", line 124, in step
     self.thought_graph, terminate = operator(self.thought_graph, nodes)
                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/pedrogimenes/reasoning-agent/src/tasks/set_intersection.py", line 278, in cot
+  File "/home/user/reasoning-agent/src/tasks/set_intersection.py", line 278, in cot
     output = out.split("Output:")[1]
              ~~~~~~~~~~~~~~~~~~~~^^^
 IndexError: list index out of range
 
 Entering debugger...
-> /home/pedrogimenes/reasoning-agent/src/tasks/set_intersection.py(278)cot()
+> /home/user/reasoning-agent/src/tasks/set_intersection.py(278)cot()
 -> output = out.split("Output:")[1]
 (Pdb) To find the intersection of the two input sets, I will split the second input set into four subsets and find the intersection of each subset with the first input set.
 

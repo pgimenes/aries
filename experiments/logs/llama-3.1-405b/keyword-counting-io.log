@@ -5163,21 +5163,21 @@ Summary
 Successes: 0
 Failures: 100
 --Return--
-> /home/pedrogimenes/reasoning-agent/src/main.py(155)run()->None
+> /home/user/reasoning-agent/src/main.py(155)run()->None
 -> breakpoint()
 (Pdb) *** SyntaxError: invalid non-printable character U+001B
 (Pdb) Traceback (most recent call last):
-  File "/home/pedrogimenes/reasoning-agent/src/main.py", line 212, in <module>
+  File "/home/user/reasoning-agent/src/main.py", line 212, in <module>
     run(args, data)
-  File "/home/pedrogimenes/anaconda3/envs/sglang/lib/python3.11/bdb.py", line 94, in trace_dispatch
+  File "/home/user/anaconda3/envs/sglang/lib/python3.11/bdb.py", line 94, in trace_dispatch
     return self.dispatch_return(frame, arg)
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/pedrogimenes/anaconda3/envs/sglang/lib/python3.11/bdb.py", line 156, in dispatch_return
+  File "/home/user/anaconda3/envs/sglang/lib/python3.11/bdb.py", line 156, in dispatch_return
     if self.quitting: raise BdbQuit
                       ^^^^^^^^^^^^^
 bdb.BdbQuit
 
 Entering debugger...
-> /home/pedrogimenes/anaconda3/envs/sglang/lib/python3.11/bdb.py(156)dispatch_return()
+> /home/user/anaconda3/envs/sglang/lib/python3.11/bdb.py(156)dispatch_return()
 -> if self.quitting: raise BdbQuit
 (Pdb) 
