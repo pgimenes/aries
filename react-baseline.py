@@ -6,11 +6,13 @@ from tqdm import tqdm
 import os
 import re
 
+API_KEY = ""
+
 # Setup model and agent
 model = OpenAIServerModel(
     model_id="openai/gpt-4o",
     api_base="https://openrouter.ai/api/v1",
-    api_key="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",
+    api_key=API_KEY,
 )
 
 agent = CodeAgent(
@@ -80,10 +82,12 @@ def generate_problem_script(sample):
 import sys
 from smolagents import CodeAgent, OpenAIServerModel
 
+API_KEY = ''
+
 model = OpenAIServerModel(
     model_id="openai/gpt-4o",
     api_base="https://openrouter.ai/api/v1",
-    api_key="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",
+    api_key=API_KEY,
 )
 
 agent = CodeAgent(
